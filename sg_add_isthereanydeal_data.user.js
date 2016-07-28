@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Add IsThereAnyDeal Data
 // @namespace    http://steamgifts.com/
-// @version      0.2
+// @version      0.3
 // @description  Adds a link to IsThereAnyDeal on the GA page and fetches the current best price and the bundles from itad.com
 // @author       mh
 // @downloadURL  https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_add_isthereanydeal_data.user.js
@@ -114,37 +114,6 @@ var enable_loadBundleInfos = true;
         var underline = dontDrawLine ? "" : "<div class='sidebar__navigation__item__underline'></div>";
         return $("<li class='sidebar__navigation__item'><a class='sidebar__navigation__item__link "+className+"' "+url+" rel='nofollow' target='_blank'><div class='sidebar__navigation__item__name'>"+name+"</div>"+underline+price+"</a></li>");
     }
-
-    /* =========================== for compatibility with the "AutoExplore Train" script ===================== */
-    var GM_getValue = function(key, def) {
-        return localStorage[key] || def;
-    };
-    var GM_setValue = function(key, value) {
-        localStorage[key] = value;
-    };
-
-    function setAutoExplore(val){
-        GM_setValue("auto_explore_active", val);
-    }
-
-    function parseBool(value){
-        if(value === "true" || value === true)
-            return true;
-        return false;
-    }
-
-    function isAutoExplore(){
-        var str = GM_getValue("auto_explore_active", false);
-        var result = parseBool(str);
-        return result;
-    }
-
-    if(isAutoExplore()){
-        enable_loadLowestPrice = false;
-        enable_loadBundleInfos = false;
-    }
-
-    /* =========================== / for compatibility with the "AutoExplore Train" script ===================== */
 
     function main(){
         injectCss();
