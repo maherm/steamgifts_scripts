@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Add IsThereAnyDeal Data
 // @namespace    http://steamgifts.com/
-// @version      0.3
+// @version      0.4
 // @description  Adds a link to IsThereAnyDeal on the GA page and fetches the current best price and the bundles from itad.com
 // @author       mh
 // @downloadURL  https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_add_isthereanydeal_data.user.js
@@ -41,7 +41,7 @@ var enable_loadBundleInfos = true;
                 if(enable_loadLowestPrice){
                     var $prices = $html.find(".new.right");
                     if($prices.length > 0){
-                        var currentBestPrice = Math.min.apply(null,$prices.map(function(idx, el){return Number($(el).text().replace(/[^0-9,.]/g,'').replace(",","."));}));
+                        var currentBestPrice = Math.min.apply(null,$prices.map(function(idx, el){return Number($(el).text().split(" ")[0].replace(/[^0-9,.]/g,'').replace(",","."));}));
                         var currency = $prices.first().text().replace(/[0-9,.]/g,'').replace(/€/g, "EUR").replace(/\$/g,"USD");
                         var priceHtml = "<div class='sidebar__navigation__item__count'>"+currentBestPrice.toFixed(2)+" "+currency +"</div>";
                         $newLine.find("a.isthereanydeal_link").append(priceHtml);
@@ -115,14 +115,20 @@ var enable_loadBundleInfos = true;
         return $("<li class='sidebar__navigation__item'><a class='sidebar__navigation__item__link "+className+"' "+url+" rel='nofollow' target='_blank'><div class='sidebar__navigation__item__name'>"+name+"</div>"+underline+price+"</a></li>");
     }
 
-    function main(){
-        injectCss();
-
-        //Get full game title from the document title
+    function getGameTitle(){
         var title = document.title;
         var urlParts = document.URL.split("/");
         if(urlParts.length > 6) //If we are at a subpage, eg "/entries", we need to remove that appendix from the title
             title = title.substring(0, title.lastIndexOf("-"));
+        return title;
+    }
+    
+    
+    function main(){
+        injectCss();
+
+        //Get full game title from the document title
+        var title = getGameTitle();
 
         //Convert the title to isthereanydeal's strange uri syntax
         var encodedTitle = encodeName(title);
