@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Add IsThereAnyDeal Data
 // @namespace    http://steamgifts.com/
-// @version      0.5
+// @version      0.6
 // @description  Adds a link to IsThereAnyDeal on the GA page and fetches the current best price and the bundles from itad.com
 // @author       mh
 // @downloadURL  https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_add_isthereanydeal_data.user.js
@@ -41,7 +41,7 @@ var enable_loadBundleInfos = true;
                 if(enable_loadLowestPrice){
                     var $prices = $html.find(".new.right");
                     if($prices.length > 0){
-                        var currentBestPrice = Math.min.apply(null,$prices.map(function(idx, el){return Number($(el).text().split(" ").slice(0,-1).join("").replace(/[^0-9,.]/g,'').replace(",","."));}));
+                        var currentBestPrice = Math.min.apply(null,$prices.map(function(idx, el){return Number($(el).text().replace(/p\.$/,'').replace(/[^0-9,.]/g,'').replace(",","."));}));
                         var currency = $prices.first().text().replace(/[0-9,.]/g,'').replace(/€/g, "EUR").replace(/\$/g,"USD");
                         var priceHtml = "<div class='sidebar__navigation__item__count'>"+currentBestPrice.toFixed(2)+" "+currency +"</div>";
                         $newLine.find("a.isthereanydeal_link").append(priceHtml);
