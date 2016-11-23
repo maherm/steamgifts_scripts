@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Add IsThereAnyDeal Data
 // @namespace    http://steamgifts.com/
-// @version      0.7
+// @version      0.8
 // @description  Adds a link to IsThereAnyDeal on the GA page and fetches the current best price and the bundles from itad.com
 // @author       mh
 // @downloadURL  https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_add_isthereanydeal_data.user.js
@@ -96,7 +96,7 @@ var enable_loadBundleInfos = true;
         str = str.replace(/\+/g, "plus");    //spell out "plus"
         str = str.replace(/\&/g, "and");    //spell out "and"
         str = str.replace(/[^a-z0]/g, '');    //remove remaining invalid characters, like spaces, braces, hyphens etc
-        return str;
+        return staticReplacements[str] || str;
     }
 
     function createNewSection($addAfter, name, className){
@@ -143,6 +143,10 @@ var enable_loadBundleInfos = true;
         loadIsThereAnyDealInfos(encodedTitle, $newLine, $pricesSection);
         $pricesSection.append($newLine);
     }
+
+    var staticReplacements = {
+        "storiesofbethemfullmoon":"storiesofbethemfullmoonedition"
+    };
 
     function injectCss(){
         $("head").append (
