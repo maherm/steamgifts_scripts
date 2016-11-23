@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Add IsThereAnyDeal Data
 // @namespace    http://steamgifts.com/
-// @version      0.6
+// @version      0.7
 // @description  Adds a link to IsThereAnyDeal on the GA page and fetches the current best price and the bundles from itad.com
 // @author       mh
 // @downloadURL  https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_add_isthereanydeal_data.user.js
@@ -66,7 +66,7 @@ var enable_loadBundleInfos = true;
                         var className = $time.hasClass("expired") ? "expired" : "";
                         var time = $time.attr("title");
                         if(time) //"Unknown expiry" has no time in the title attribute
-                            time = moment(time).fromNow();
+                            time = moment(time, "YYYY-MM-DD HH:mm 'GMT'").fromNow();
                         else
                             time = "Active";
 
