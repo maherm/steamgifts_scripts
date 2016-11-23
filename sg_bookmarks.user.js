@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Bookmarks
 // @namespace    http://steamgifts.com/
-// @version      0.1
+// @version      0.2
 // @description  Bookmark giveaways
 // @author       mahermen
 // @downloadURL  https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js
@@ -282,7 +282,7 @@
 
 function injectCss(){
     /*jshint multistr: true */
- GM_addStyle(".__mh_ci>a:not(:first-child){\
+ GM_addStyle('.__mh_ci>a:not(:first-child){\
 margin-left: 10px;\
 }\
 .__mh_nav_row_img {\
@@ -297,6 +297,7 @@ margin-right:10px;\
 }\
 .__mh_ended{\
 -webkit-filter: grayscale(100%);\
+filter: url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\'><filter id=\'grayscale\'><feColorMatrix type=\'matrix\' values=\'0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0\'/></filter></svg>#grayscale"); /* Firefox 3.5+ */ \
 }\
 .__mh_bookmark_container .nav__row{\
 padding:0px;\
@@ -305,6 +306,6 @@ background-color:#f0f2f5;\
 .__mh_no_bookmarks{\
 color:gray;\
 }\
-");
+');
 }
 })();
