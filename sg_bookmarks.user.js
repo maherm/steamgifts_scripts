@@ -1,9 +1,10 @@
 // ==UserScript==
-// @name         SG Bookmark
+// @name         SG Bookmarks
 // @namespace    http://steamgifts.com/
 // @version      0.1
 // @description  Bookmark giveaways
 // @author       mahermen
+// @downloadURL  https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.3/jquery.min.js
 // @require      http://momentjs.com/downloads/moment.min.js
 // @include      http*://www.steamgifts.com/*
