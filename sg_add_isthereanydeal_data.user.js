@@ -1,23 +1,52 @@
 // ==UserScript==
 // @name         SG Add IsThereAnyDeal Data
 // @namespace    http://steamgifts.com/
-// @version      0.8
+// @version      0.10
 // @description  Adds a link to IsThereAnyDeal on the GA page and fetches the current best price and the bundles from itad.com
 // @author       mh
 // @downloadURL  https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_add_isthereanydeal_data.user.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.3/jquery.min.js
 // @require      http://momentjs.com/downloads/moment.min.js
+// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.5/sgapi.js
+// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.5/sgapi_gatools.js
+// @resource     css https://raw.githubusercontent.com/maherm/steamgifts_scripts/9edf74/sg_add_isthereanydeal_data.css
 // @include      http*://www.steamgifts.com/giveaway/*
 // @grant        GM_xmlhttpRequest
+// @grant        GM_getResourceText
+// @connect      isthereanydeal.com
 // ==/UserScript==
 
 /*jshint multistr: true */
-
-var enable_loadLowestPrice = true;
-var enable_loadBundleInfos = true;
-
 (function() {
     'use strict';
+
+    var enable_loadLowestPrice = true;
+    var enable_loadBundleInfos = true;
+	var staticReplacements = {
+        "storiesofbethemfullmoon":"storiesofbethemfullmoonedition",
+        "feariireborndlc":"feariireborn",
+		"justcauseiiixl":"justcauseiiixledition"
+    };
+
+    function main(){
+        SgApi.Util.requireDeclaredStyles();
+
+        //Get full game title from the document title
+        var title = SgApi.Giveaways.currentGiveaway().gameTitle;
+
+        //Convert the title to isthereanydeal's strange uri syntax
+        var encodedTitle = encodeName(title);
+
+        //Build URL
+        var url = "https://isthereanydeal.com/#/page:game/info?plain="+encodedTitle;
+
+        //Add Link to navbar
+        var $pricesSection = $(".sidebar__navigation").last();
+
+        var $newLine = createNewLine("IsThereAnyDeal", url, "isthereanydeal_link");
+        loadIsThereAnyDealInfos(encodedTitle, $newLine, $pricesSection);
+        $pricesSection.append($newLine);
+    }
 
     function loadIsThereAnyDealInfos(encodedTitle, $newLine, $pricesNavSection){
         if(!enable_loadLowestPrice)
@@ -115,56 +144,5 @@ var enable_loadBundleInfos = true;
         return $("<li class='sidebar__navigation__item'><a class='sidebar__navigation__item__link "+className+"' "+url+" rel='nofollow' target='_blank'><div class='sidebar__navigation__item__name'>"+name+"</div>"+underline+price+"</a></li>");
     }
 
-    function getGameTitle(){
-        var title = document.title;
-        var urlParts = document.URL.split("/");
-        if(urlParts.length > 6) //If we are at a subpage, eg "/entries", we need to remove that appendix from the title
-            title = title.substring(0, title.lastIndexOf("-"));
-        return title;
-    }
-    
-    
-    function main(){
-        injectCss();
-
-        //Get full game title from the document title
-        var title = getGameTitle();
-
-        //Convert the title to isthereanydeal's strange uri syntax
-        var encodedTitle = encodeName(title);
-
-        //Build URL
-        var url = "https://isthereanydeal.com/#/page:game/info?plain="+encodedTitle;
-
-        //Add Link to navbar
-        var $pricesSection = $(".sidebar__navigation").last();
-
-        var $newLine = createNewLine("IsThereAnyDeal", url, "isthereanydeal_link");
-        loadIsThereAnyDealInfos(encodedTitle, $newLine, $pricesSection);
-        $pricesSection.append($newLine);
-    }
-
-    var staticReplacements = {
-        "storiesofbethemfullmoon":"storiesofbethemfullmoonedition"
-    };
-
-    function injectCss(){
-        $("head").append (
-		'<style> \
-			   a.sidebar__navigation__item__link.expired *{\
-				color: #aeafaf;\
-			}\
-			\
-			a.sidebar__navigation__item__link span.bundleShop{\
-				font-size: 6pt;\
-				padding-left: 5px;\
-				color: #B287AF;\
-			}\
-			.sidebar__navigation__item__name{ \
-				max-width: 250px; \
-			}\
-		</style>'
-        );
-    }
     main();
 })();
