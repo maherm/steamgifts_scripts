@@ -13,3 +13,9 @@
 * Expired GAs are gray
 
 [Install](https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js)
+
+
+## SG Syntax Highlighting
+* Highlights code in code blocks marked with a language
+
+[Install](https://github.com/maherm/steamgifts_scripts/raw/master/sg_syntax_highlighting.user.js)
