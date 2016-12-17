@@ -1,0 +1,12 @@
+a.sidebar__navigation__item__link.expired *{
+	color: #aeafaf;
+}
+
+a.sidebar__navigation__item__link span.bundleShop{
+	font-size: 6pt;
+	padding-left: 5px;
+	color: #B287AF;
+}
+.sidebar__navigation__item__name{ 
+	max-width: 250px; 
+}
