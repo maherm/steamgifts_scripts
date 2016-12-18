@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Bookmarks
 // @namespace    http://steamgifts.com/
-// @version      0.8
+// @version      0.9
 // @description  Bookmark giveaways
 // @author       mahermen
 // @downloadURL  https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js
@@ -166,7 +166,7 @@ function addNavButton(){
 	$html.attr("title", "Bookmarked Giveaways");
 	$html.on("click.bookmark",openBookmarkContainer);
 	$(".nav__right-container").prepend($html);
-	$(document).on("click.bookmark",closeBookmarkContainer);
+	$(document).on("click.bookmark",":not(.___mh_bookmark_outer_container)",closeBookmarkContainer);
    buildNavRows();
 }
 
