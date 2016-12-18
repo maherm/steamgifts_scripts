@@ -1,16 +1,16 @@
 // ==UserScript==
 // @name         SG Bookmarks
 // @namespace    http://steamgifts.com/
-// @version      0.6
+// @version      0.7
 // @description  Bookmark giveaways
 // @author       mahermen
 // @downloadURL  https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js
 // @require      https://code.jquery.com/jquery-3.1.1.min.js
-// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.5/sgapi.js
-// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.5/sgapi_gatools.js
-// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.5/sgapi_settings.js
+// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi.js
+// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi_gatools.js
+// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi_settings.js
 // @require      http://momentjs.com/downloads/moment.min.js
-// @resource     css https://raw.githubusercontent.com/maherm/steamgifts_scripts/9edf74/sg_bookmarks_v2.css
+// @resource     css https://raw.githubusercontent.com/maherm/steamgifts_scripts/e84b2c/sg_bookmarks.css
 // @include      http*://www.steamgifts.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -27,14 +27,41 @@ use(Util);
 var data = new Data();
 
 function main(){
-	//requireDeclaredStyles();
-    requireCss("https://manuelhermenau.de/scripts/sg_bookmarks_v2.css");
+	requireDeclaredStyles();
 	readBookmarks();
     initSettings();
+	fixDatabase();
 	if(isGiveaway()){
 	   showButton();
 	}
    addNavButton();
+}
+
+function fixDatabase(){
+	if(parseBool(GM_getValue("fixedDb0.7", false))){
+		return; //already fixed
+	}
+	console.log("Fixing corrupted database...")
+	for(var k in data.bookmarks){
+		if(k===undefined || k === "undefined"){
+			clearBookmark(k);
+		}
+		if(data.bookmarks[k] === undefined || Object.keys(data.bookmarks[k]).length===0){
+			console.log("Fixing ",k);
+			clearBookmark(k);
+			Giveaways.loadGiveaway(k, function(ga){
+				delete ga.descriptionHtml;
+				data.bookmarks[k] = unwrap(ga);
+				save();
+				try{
+					buildNavRows();
+				}catch(e){
+					console.error(e);
+				};
+			});
+		}
+	}
+	GM_setValue("fixedDb0.7", true);
 }
 
 function updateMenuButtonState(){
@@ -88,7 +115,7 @@ function addNavRow(bookmarkData){
    var creator = bookmarkData.creator;
    var ends = bookmarkData.endTime;
    var cp = bookmarkData.cp;
-   var imgUrl = bookmarkData.thumbUrl;
+   var imgUrl = bookmarkData.thumbUrl || getGameThumbUrl(steamAppId);
    var endsAt = moment.unix(ends);
    var hasEnded = endsAt.isBefore(moment());
    title = title+ " ("+cp+"P)";
@@ -179,7 +206,9 @@ function getContextInfoContainer(){
 }
 
 function readCurrentData(){
-	return Giveaways.currentGiveaway();
+	var result = Giveaways.currentGiveaway();
+	delete result.descriptionHtml; //We dont want to save HTML in GM_storage that we dont need
+	return unwrap(result);
 }
 
 function saveData(){
