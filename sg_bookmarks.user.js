@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Bookmarks
 // @namespace    http://steamgifts.com/
-// @version      0.7
+// @version      0.8
 // @description  Bookmark giveaways
 // @author       mahermen
 // @downloadURL  https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js
@@ -10,7 +10,7 @@
 // @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi_gatools.js
 // @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi_settings.js
 // @require      http://momentjs.com/downloads/moment.min.js
-// @resource     css https://raw.githubusercontent.com/maherm/steamgifts_scripts/e84b2c/sg_bookmarks.css
+// @resource     css https://raw.githubusercontent.com/maherm/steamgifts_scripts/040086/sg_bookmarks.css
 // @include      http*://www.steamgifts.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -41,7 +41,7 @@ function fixDatabase(){
 	if(parseBool(GM_getValue("fixedDb0.7", false))){
 		return; //already fixed
 	}
-	console.log("Fixing corrupted database...")
+	console.log("Fixing corrupted database...");
 	for(var k in data.bookmarks){
 		if(k===undefined || k === "undefined"){
 			clearBookmark(k);
@@ -57,26 +57,28 @@ function fixDatabase(){
 					buildNavRows();
 				}catch(e){
 					console.error(e);
-				};
+				}
 			});
 		}
 	}
 	GM_setValue("fixedDb0.7", true);
 }
 
-function updateMenuButtonState(){
+function closeBookmarkContainer(){
 	var $button = $('.__mh_bookmark_button');
-	var $dropdown = $button.find(".nav__relative-dropdown");
-	if($dropdown.hasClass("is-hidden")){
-		$button.removeClass("nav__button-container--active").addClass("nav__button-container--inactive");
-	}
+	var $dropdown = $(".___mh_bookmark_outer_container.nav__relative-dropdown");
+	$dropdown.addClass("is-hidden");
+	$button.removeClass("nav__button-container--active").addClass("nav__button-container--inactive");
 }
 
-function toggleBookmarkContainer(e){
+function openBookmarkContainer(e){
 	var  $t=$(this);
 	setTimeout(function(){
-			$t.addClass("nav__button-container--active").find(".nav__relative-dropdown").removeClass("is-hidden");
+			$t.addClass("nav__button-container--active");
+			$(".___mh_bookmark_outer_container.nav__relative-dropdown").removeClass("is-hidden");
+            $("html, body").animate({ scrollTop: 0 }, "fast");
 	},0);
+    return false;
 }
 
 function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id){
@@ -155,14 +157,16 @@ function updateBadge($html){
 
 function addNavButton(){
 	var $html = $('<div class="nav__button-container nav__button-container--notification __mh_bookmark_button"> \
-							<a class="nav__button"><i class="fa fa-bookmark"></i></a>\
-<div class="nav__relative-dropdown is-hidden"><div class="nav__absolute-dropdown __mh_bookmark_container">\
-</div></div></div>');
+							<a class="nav__button"><i class="fa fa-bookmark"></i></a></div>');
+	var $dropdown = $('<div class="nav__relative-dropdown ___mh_bookmark_outer_container is-hidden"><div class="nav__absolute-dropdown __mh_bookmark_container"></div></div>');
+	$html.append($dropdown);
+	$dropdown.insertAfter("header");
+
 	updateBadge($html);
 	$html.attr("title", "Bookmarked Giveaways");
-	$html.on("click.bookmark",toggleBookmarkContainer);
+	$html.on("click.bookmark",openBookmarkContainer);
 	$(".nav__right-container").prepend($html);
-	$(document).on("click.bookmark",function(){setTimeout(updateMenuButtonState,0);});
+	$(document).on("click.bookmark",closeBookmarkContainer);
    buildNavRows();
 }
 
