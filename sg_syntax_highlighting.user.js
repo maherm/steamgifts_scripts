@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         SG Syntax Highlighting
 // @namespace    https://www.steamgifts.com/user/mahermen
-// @version      0.1
+// @version      0.2
 // @description  Highlights source code
 // @require      https://code.jquery.com/jquery-3.1.1.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/SyntaxHighlighter/3.0.83/scripts/shCore.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/SyntaxHighlighter/3.0.83/scripts/shBrushJScript.min.js
-// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.5/sgapi.js
+// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi.js
 // @resource     coreMin https://cdnjs.cloudflare.com/ajax/libs/SyntaxHighlighter/3.0.83/styles/shCore.min.css
 // @resource     themeDefault https://cdnjs.cloudflare.com/ajax/libs/SyntaxHighlighter/3.0.83/styles/shThemeDefault.min.css
 // @author       mahermen
