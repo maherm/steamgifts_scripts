@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Syntax Highlighting
 // @namespace    https://www.steamgifts.com/user/mahermen
-// @version      0.3
+// @version      0.4
 // @description  Highlights source code
 // @require      https://code.jquery.com/jquery-3.1.1.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/SyntaxHighlighter/3.0.83/scripts/shCore.min.js
@@ -18,7 +18,7 @@ SgApi.Util.requireDeclaredStyles();
 SgApi.Util.injectCss(".syntaxhighlighter { overflow-y: hidden !important;padding-top: 8px!important;padding-bottom: 8px!important; }");
 
 $("pre code[class]").each(function(i, block) {
-    $(block).parent().addClass($(block).attr("class").replace("language-","toolbar:false; brush: ")).text($(block).text());
+    var $pre = $(block).parent();
+    $pre.addClass($(block).attr("class").replace("language-","toolbar:false; brush: ")).text($(block).text());
+    SyntaxHighlighter.highlight(undefined, $pre[0]);
 });
-
-SyntaxHighlighter.all();
