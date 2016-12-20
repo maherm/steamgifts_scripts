@@ -1,14 +1,15 @@
 // ==UserScript==
 // @name         SG Bookmarks
 // @namespace    http://steamgifts.com/
-// @version      0.9
+// @version      0.10
 // @description  Bookmark giveaways
 // @author       mahermen
 // @downloadURL  https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js
 // @require      https://code.jquery.com/jquery-3.1.1.min.js
+// @require      https://cdn.rawgit.com/nnattawat/flip/master/dist/jquery.flip.min.js
 // @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi.js
 // @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi_gatools.js
-// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi_settings.js
+// @require      https://manuelhermenau.de/scripts/sgapi_settings.js?2012.12
 // @require      http://momentjs.com/downloads/moment.min.js
 // @resource     css https://raw.githubusercontent.com/maherm/steamgifts_scripts/040086/sg_bookmarks.css
 // @include      http*://www.steamgifts.com/*
@@ -28,11 +29,14 @@ var data = new Data();
 
 function main(){
 	requireDeclaredStyles();
+    injectCss("div.__mh_nav_row_img div.back div.sidebar__entry-custom i.fa {margin-right: 7px; 	margin-top: -1px; 	font-size: 16px; 	color: rgba(63,115,0,0.95); }");
+    injectCss("div.__mh_nav_row_img div.back div.sidebar__entry-custom {margin: 0px!important;width: 74px;height: 29px;padding-top: 6px!important; text-align: start; padding-left: 16px!important; }");
 	readBookmarks();
     initSettings();
 	fixDatabase();
 	if(isGiveaway()){
-	   showButton();
+       if(!(data.settings.get("Remove ended Giveaways automatically") && Giveaways.currentGiveaway().hasEnded))
+           showButton();
 	}
    addNavButton();
 }
@@ -88,8 +92,24 @@ function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id){
 		 $html.addClass(" __mh_ended");
 	if(url)
 		$html.attr("href",url);
-	if(imgUrl)
-		$html.append('<img class="__mh_nav_row_img" src="'+imgUrl+'">');
+	if(imgUrl){
+        var $front = $("<div class='front'>");
+        $front.append('<img class="__mh_nav_row_img" src="'+imgUrl+'">');
+        var $flip = $front;
+        if(!hasEnded){
+            $flip = $("<div class='__mh_nav_row_img'>");
+            var $back = $('<div class="back"><div data-do="entry_insert" class="sidebar__entry-custom sidebar__entry-insert"><i class="fa fa-plus-circle"></i> Enter</div></div>');
+            $flip.append($front);
+            $flip.append($back);
+            var speed=1;
+            if(data.settings.get("Flip")){
+                speed = 200;
+            }
+             $flip.flip({trigger:'hover', speed:speed});
+        }
+        $html.append($flip);
+        
+    }
 	var $div = $('<div class="nav__row__summary">');
 	var $titleP = $('<p class="nav__row__summary__name">'+(title?title:"")+'</p>');
 	var $descrP = $('<p class="nav__row__summary__description">'+(descr?descr:'')+'</p>');
@@ -110,6 +130,7 @@ function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id){
 }
 
 function addNavRow(bookmarkData){
+   /*SgApi usage: bookmarkData is the result of SgApi.Giveaways.currentGiveaway()*/
    var title = bookmarkData.gameTitle;
    var steamAppId = bookmarkData.steamAppId || bookmarkData.steamId;
    var id = bookmarkData.id;
@@ -136,15 +157,17 @@ function buildNavRows(){
 	if(lst.length > 0)
 		$.each(bookmarkList(),function(i,e){addNavRow(e);});
 	else
-		addBookmarkMenuItem("<div class='nav__row__summary__name __mh_no_bookmarks'>No bookmarks</div>",false,false,"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+		addBookmarkMenuItem("<div class='nav__row__summary__name __mh_no_bookmarks'>No bookmarks</div>",false,false,"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", true);
 
 }
 
 function updateBadge($html){
-    var doNotify = data.settings.get("Notify if Giveaways are about to end");
-	var timespan = data.settings.get("Minutes before Ending");
-	if(!doNotify)
+    var doNotify = data.settings.get("Notify if Giveaways are about to end"); /*SgApi Settings usage*/
+	var timespan = data.settings.get("Minutes before Ending"); /*SgApi Settings usage*/
+	if(!doNotify){
+        $html.find("a.nav__button .nav__notification").remove();
 		return;
+    }
 	var badgeNum = bookmarkList().filter(function(e){
 		return moment.unix(e.endTime).isBetween(moment(), moment().add(timespan, "minutes"));
 	}).length;
@@ -171,13 +194,13 @@ function addNavButton(){
 }
 
 function toggleBookmarkCurrentPage(){
-	toggleBookmark(getCurrentId());
+	toggleBookmark(/*SgApi.Util.*/getCurrentId());
 	updateButtonState();
 	updateBadge($(".__mh_bookmark_button"));
 }
 
 function amIBookmarked(){
-	return isBookmarked(getCurrentId());
+	return isBookmarked(/*SgApi.Util.*/getCurrentId());
 }
 
 function isBookmarked(id){
@@ -210,9 +233,9 @@ function getContextInfoContainer(){
 }
 
 function readCurrentData(){
-	var result = Giveaways.currentGiveaway();
+	var result = /*SgApi.*/Giveaways.currentGiveaway();
 	delete result.descriptionHtml; //We dont want to save HTML in GM_storage that we dont need
-	return unwrap(result);
+	return /*SgApi.Util.*/unwrap(result);
 }
 
 function saveData(){
@@ -238,11 +261,28 @@ function toggleBookmark(gaId){
 	buildNavRows();
 }
 
+function deleteEndedGAs(){
+    Object.keys(data.bookmarks).forEach(function(key){
+        var el = data.bookmarks[key];
+        if(el.endTime*1000 < new Date().getTime())
+            clearBookmark(el.id);
+    });
+}
+
 function initSettings(){
     data.settings = new SgApi.Settings("SG Bookmarks")
         .boolean("Notify if Giveaways are about to end", true)
-        .int("Minutes before Ending", 10, {minValue:1})
+        .int("Minutes before Ending", 10, {minValue:1, visible: function(){return this.get("Notify if Giveaways are about to end");}})
+        .boolean("Flip", false, {visible:false})
+        .boolean("Remove ended Giveaways automatically", false, {description: "CAUTION! If you check this setting all your ended bookmarks are deleted immediately!"})
+        .func("Clean up",deleteEndedGAs, {description:"Delete all ended Giveaways from your bookmarks", faIcon:"fa-trash-o"})
         .init({instantSubmit:true});
+    data.settings.on("save", function(){
+        this.reload();
+        buildNavRows();
+        updateBadge($(".__mh_bookmark_button"));
+    });
+
 }
 
 function readBookmarks(){
@@ -251,6 +291,8 @@ function readBookmarks(){
 
 function bookmarkList(){
 	var lst =[];
+    if(data.settings.get("Remove ended Giveaways automatically"))
+        deleteEndedGAs();
 	for(var k in data.bookmarks){
 		lst.push(data.bookmarks[k]);
 	}
