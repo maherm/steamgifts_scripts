@@ -23,7 +23,7 @@
 /*jshint multistr: true */
 
 use(SgApi);
-use(Util);
+use(Util); /*Same as: use(SgApi.Util);*/
 
 var data = new Data();
 
@@ -53,6 +53,7 @@ function fixDatabase(){
 		if(data.bookmarks[k] === undefined || Object.keys(data.bookmarks[k]).length===0){
 			console.log("Fixing ",k);
 			clearBookmark(k);
+            /*SgApi usage example*/
 			Giveaways.loadGiveaway(k, function(ga){
 				delete ga.descriptionHtml;
 				data.bookmarks[k] = unwrap(ga);
