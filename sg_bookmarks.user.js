@@ -17,14 +17,36 @@
 // @grant        GM_listValues
 // @grant        GM_deleteValue
 // @grant        GM_getResourceText
+// @grant        GM_addStyle
 // ==/UserScript==
 
 /*jshint multistr: true */
+
+//Giveaway Entered classes
+GM_addStyle(".nav__relative-dropdown.___mh_bookmark_outer_container {z-index:1000;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered {background-image: linear-gradient(#f6f6ec 0%, #e9e9ca 100%);\
+background-image: -moz-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);\
+background-image: -webkit-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_owned {background-image: linear-gradient(#f7edf1 0%, #e6d9de 100%);\
+background-image: -moz-linear-gradient(#f7edf1 0%, #e6d9de 100%);\
+background-image: -webkit-linear-gradient(#f7edf1 0%, #e6d9de 100%);}");
+//Train classes
+//GM_addStyle(".nav__row.__mh_bookmark_item{padding-bottom:10px}");
+GM_addStyle(".nav__row.__mh_bookmark_item.mid_train{height: 20px;overflow:hidden;margin: 1px 1px 1px 10px;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__name{text-overflow: ellipsis;white-space: nowrap;overflow: hidden;width: 240px;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__description{display:none;}");
 
 use(SgApi);
 use(Util);
 
 var data = new Data();
+var lazyTrainManager = {};//{desc1:1,desc:2,...}
+
+//CONSTANTS
+var STATE_NOT_ENTERED = false;
+var STATE_ENTERED = "entered";
+var STATE_OWNED = "owned";//Owned
+var STATE_ENDED = "ended";
 
 function main(){
 	requireDeclaredStyles();
@@ -32,6 +54,10 @@ function main(){
     initSettings();
 	fixDatabase();
 	if(isGiveaway()){
+		if(amIBookmarked()) {
+		  $("div.sidebar__entry-delete").click(function(){updateBookmark(false);});//setup giveaway update
+			$("div.sidebar__entry-insert").click(function(){updateBookmark(true);});//setup giveaway update
+		}
 	   showButton();
 	}
    addNavButton();
@@ -81,11 +107,14 @@ function openBookmarkContainer(e){
     return false;
 }
 
-function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id){
+function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
 	 var $html = $('<a class="nav__row"></a>');
 	$html.addClass("__mh_bookmark_item");
 	 if(hasEnded)
 		 $html.addClass(" __mh_ended");
+	 else if(state) {
+		 $html.addClass("__mh_state_"+state);
+	 }
 	if(url)
 		$html.attr("href",url);
 	if(imgUrl)
@@ -93,6 +122,11 @@ function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id){
 	var $div = $('<div class="nav__row__summary">');
 	var $titleP = $('<p class="nav__row__summary__name">'+(title?title:"")+'</p>');
 	var $descrP = $('<p class="nav__row__summary__description">'+(descr?descr:'')+'</p>');
+	if(!lazyTrainManager[descr]) {//First time seeing this descript
+		 lazyTrainManager[descr] = 1;
+	} else {
+		$html.addClass("mid_train");//I mean, trains are usually by the same person and usually end at the same time
+	}
 	$div.append($titleP);
 	$div.append($descrP);
 	$html.append($div);
@@ -123,11 +157,16 @@ function addNavRow(bookmarkData){
    title = title+ " ("+cp+"P)";
    var endsStr = hasEnded ? "ended" : "ends";
    var descr = "by "+creator+" - "+endsStr+" "+endsAt.fromNow();
-   addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id);
+   var state = STATE_NOT_ENTERED;
+	 if(bookmarkData.isEntered) { state = STATE_ENTERED; } 
+	else if(bookmarkData.isOwned) { state = STATE_OWNED; }
+	else if(bookmarkData.hasEnded) { state = STATE_ENDED; }
+   addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state);
 }
 
 function clearNavRows(){
 	$(".__mh_bookmark_container").empty();
+	lazyTrainManager = {};
 }
 
 function buildNavRows(){
@@ -222,6 +261,14 @@ function saveData(){
 function clearBookmark(gaId){
    delete data.bookmarks[gaId];
    saveData();
+}
+
+function updateBookmark(entering) {
+	var gaData = readCurrentData();
+	if(entering) { gaData.isEntered = true; }//assume success
+	else { gaData.isEntered = false; }
+	saveBookmark(getCurrentId(), gaData);
+	buildNavRows();
 }
 
 function saveBookmark(gaId, bookmarkData){
