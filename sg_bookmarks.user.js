@@ -33,7 +33,7 @@ background-image: -webkit-linear-gradient(#f7edf1 0%, #e6d9de 100%);}");
 //Train classes
 //GM_addStyle(".nav__row.__mh_bookmark_item{padding-bottom:10px}");
 GM_addStyle(".nav__row.__mh_bookmark_item.mid_train{height: 20px;overflow:hidden;margin: 1px 1px 1px 10px;}");
-GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__name{text-overflow: ellipsis;white-space: nowrap;overflow: hidden;width: 240px;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__name{white-space: nowrap;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__description{display:none;}");
 
 use(SgApi);
@@ -47,6 +47,7 @@ var STATE_NOT_ENTERED = false;
 var STATE_ENTERED = "entered";
 var STATE_OWNED = "owned";//Owned
 var STATE_ENDED = "ended";
+var MAX_BOOKMARK_STR_LENGTH = 39;
 
 function main(){
 	requireDeclaredStyles();
@@ -154,7 +155,11 @@ function addNavRow(bookmarkData){
    var imgUrl = bookmarkData.thumbUrl || getGameThumbUrl(steamAppId);
    var endsAt = moment.unix(ends);
    var hasEnded = endsAt.isBefore(moment());
-   title = title+ " ("+cp+"P)";
+	 var cpstr = " ("+cp+"P)";
+	 if(title.length + cpstr.length > MAX_BOOKMARK_STR_LENGTH) {
+		 title = title.substr(0,MAX_BOOKMARK_STR_LENGTH - cpstr.length) + "…";
+	 }
+   title = title+ cpstr;
    var endsStr = hasEnded ? "ended" : "ends";
    var descr = "by "+creator+" - "+endsStr+" "+endsAt.fromNow();
    var state = STATE_NOT_ENTERED;
