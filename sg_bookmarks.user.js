@@ -40,6 +40,7 @@ GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__descript
 use(SgApi);
 use(Util);
 
+//GM_setValue("fixedEntered",false);
 var data = new Data();
 var lazyTrainManager = {};//{desc1:1,desc:2,...}
 
@@ -53,7 +54,7 @@ var MAX_BOOKMARK_STR_LENGTH = 39;
 function main(){
 	requireDeclaredStyles();
 	readBookmarks();
-    initSettings();
+  initSettings();
 	fixDatabase();
 	if(isGiveaway()){
 		if(amIBookmarked()) {
@@ -66,15 +67,17 @@ function main(){
 }
 
 function fixDatabase(){
-	if(parseBool(GM_getValue("fixedDb0.7", false)) && GM_getValue("fixedEntered",false)){
+	var fixedEntered = true;//GM_getValue("fixedEntered",false);
+	if(parseBool(GM_getValue("fixedDb0.7", false)) && fixedEntered){
 		return; //already fixed
 	}
 	console.log("Fixing corrupted database...");
 	for(var k in data.bookmarks){
+		//console.log(data.bookmarks);
 		if(k===undefined || k === "undefined"){
 			clearBookmark(k);
 		}
-		if(data.bookmarks[k] === undefined || Object.keys(data.bookmarks[k]).length===0){
+		if(!fixedEntered || data.bookmarks[k] === undefined || Object.keys(data.bookmarks[k]).length===0){
 			console.log("Fixing ",k);
 			clearBookmark(k);
 			Giveaways.loadGiveaway(k, function(ga){
@@ -86,6 +89,7 @@ function fixDatabase(){
 				}catch(e){
 					console.error(e);
 				}
+				//console.log("wtf")
 			});
 		}
 	}
