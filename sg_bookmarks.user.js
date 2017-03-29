@@ -22,11 +22,12 @@
 
 /*jshint multistr: true */
 
-//Giveaway Entered classes
+//GA Entered classes
 GM_addStyle(".nav__relative-dropdown.___mh_bookmark_outer_container {z-index:1000;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered {background-image: linear-gradient(#f6f6ec 0%, #e9e9ca 100%);\
 background-image: -moz-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);\
 background-image: -webkit-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);}");
+//GA Owned classes
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_owned {background-image: linear-gradient(#f7edf1 0%, #e6d9de 100%);\
 background-image: -moz-linear-gradient(#f7edf1 0%, #e6d9de 100%);\
 background-image: -webkit-linear-gradient(#f7edf1 0%, #e6d9de 100%);}");
@@ -65,7 +66,7 @@ function main(){
 }
 
 function fixDatabase(){
-	if(parseBool(GM_getValue("fixedDb0.7", false))){
+	if(parseBool(GM_getValue("fixedDb0.7", false)) && GM_getValue("fixedEntered",false)){
 		return; //already fixed
 	}
 	console.log("Fixing corrupted database...");
@@ -88,8 +89,11 @@ function fixDatabase(){
 			});
 		}
 	}
+	console.log("Fixed");
 	GM_setValue("fixedDb0.7", true);
+	GM_setValue("fixedEntered",true);
 }
+
 
 function closeBookmarkContainer(){
 	var $button = $('.__mh_bookmark_button');
@@ -269,6 +273,7 @@ function clearBookmark(gaId){
 }
 
 function updateBookmark(entering) {
+  readBookmarks();
 	var gaData = readCurrentData();
 	if(entering) { gaData.isEntered = true; }//assume success
 	else { gaData.isEntered = false; }
