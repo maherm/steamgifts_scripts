@@ -3,7 +3,7 @@
 // @namespace    http://steamgifts.com/
 // @version      0.9
 // @description  Bookmark giveaways
-// @author       mahermen
+// @author       mahermen,crazoter
 // @downloadURL  https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js
 // @require      https://code.jquery.com/jquery-3.1.1.min.js
 // @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi.js
@@ -24,18 +24,23 @@
 
 //GA Entered classes
 GM_addStyle(".nav__relative-dropdown.___mh_bookmark_outer_container {z-index:1000;}");
-GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered {background-image: linear-gradient(#f6f6ec 0%, #e9e9ca 100%);\
-background-image: -moz-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);\
-background-image: -webkit-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered *{opacity:0.7;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered.mid_train .train_tracks {opacity: 0.17; padding: 0px 4px 0px 4px}");
+//GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered {background-image: linear-gradient(#f6f6ec 0%, #e9e9ca 100%);background-image: -moz-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);background-image: -webkit-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);}");
 //GA Owned classes
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_owned {background-image: linear-gradient(#f7edf1 0%, #e6d9de 100%);\
 background-image: -moz-linear-gradient(#f7edf1 0%, #e6d9de 100%);\
 background-image: -webkit-linear-gradient(#f7edf1 0%, #e6d9de 100%);}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_owned::hover { color: #111; }");
 //Train classes
 //GM_addStyle(".nav__row.__mh_bookmark_item{padding-bottom:10px}");
-GM_addStyle(".nav__row.__mh_bookmark_item.mid_train{height: 20px;overflow:hidden;margin: 1px 1px 1px 10px;}");
+//GM_addStyle(".nav__row.__mh_bookmark_item{border-top:1px solid #DDD;}");
+//GM_addStyle(".nav__row.__mh_bookmark_item{z-index:9;position:relative;box-shadow: 0px 1px 5px -1px #ccc;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.mid_train{box-shadow: inset 0 0 10px -9px #000000;height: 20px;overflow:hidden;margin: 0px 0px 0px 2px;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__name{white-space: nowrap;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__description{display:none;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .train_tracks {opacity: 0.3; padding: 0px 4px 0px 4px}");
+GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .__mh_nav_row_img{width:80px;}");
 
 use(SgApi);
 use(Util);
@@ -45,7 +50,7 @@ var data = new Data();
 var lazyTrainManager = {};//{desc1:1,desc:2,...}
 
 //CONSTANTS
-var STATE_NOT_ENTERED = false;
+var STATE_NOT_ENTERED = "unentered";
 var STATE_ENTERED = "entered";
 var STATE_OWNED = "owned";//Owned
 var STATE_ENDED = "ended";
@@ -83,7 +88,7 @@ function fixDatabase(){
 			Giveaways.loadGiveaway(k, function(ga){
 				delete ga.descriptionHtml;
 				data.bookmarks[k] = unwrap(ga);
-				save();
+				saveData();
 				try{
 					buildNavRows();
 				}catch(e){
@@ -127,15 +132,16 @@ function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
 	if(url)
 		$html.attr("href",url);
 	if(imgUrl)
+		if(!lazyTrainManager[descr]) {//First time seeing this descript
+		 lazyTrainManager[descr] = 1;
+		} else {
+			$html.addClass("mid_train");//I mean, trains are usually by the same person and usually end at the same time
+			$html.append('<img class="train_tracks" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAUCAYAAAC58NwRAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAUFJREFUeNqU0j8oRWEYx/Hz5/pzr0kMVzIYDEQ2pZTFYlZ2i8XAyGC1UWQwMDGIazIok79ZbMpmlCJcJXEd9/o+p99bJ+V07qnPPad7n+c57+99r+953gbG8Yh1fOETP8ihgGn0Ycvno+Zlv95sQgkjeMEuKnpLhAbkMYFu7LnOA2ynTF7FhT0E+iLLsuIaW9ImhvCKucSSXOi8fu/Bcr2hI5uwhEk8Y0VhbVurekMjZtCrLPFVyhD6PBk6hJ/S4KsmfjjBAMo4Vmh30nYOzRhDF47qDf1hDVOYVeh5Ta7oHir0Igax4Dr3sZMyeQ1nLnRBhxOmNOSUpcWWdIcOvOMG33/+fFbYj3ZcJ0PXVBzpXk1kaNKOPlnhKC5xiE4U0YZWTS0q3y2GbW2neNDO3P+ToaxdvAoSoYKU0KHblF8BBgCOtE6kWi9QOAAAAABJRU5ErkJggg==">');
+		}
 		$html.append('<img class="__mh_nav_row_img" src="'+imgUrl+'">');
 	var $div = $('<div class="nav__row__summary">');
 	var $titleP = $('<p class="nav__row__summary__name">'+(title?title:"")+'</p>');
 	var $descrP = $('<p class="nav__row__summary__description">'+(descr?descr:'')+'</p>');
-	if(!lazyTrainManager[descr]) {//First time seeing this descript
-		 lazyTrainManager[descr] = 1;
-	} else {
-		$html.addClass("mid_train");//I mean, trains are usually by the same person and usually end at the same time
-	}
 	$div.append($titleP);
 	$div.append($descrP);
 	$html.append($div);
