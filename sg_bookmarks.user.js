@@ -49,10 +49,7 @@ height: 20px;\
 width: 12px;\
 background-position: center center;\
 margin: 0 0 0 0;\}");
-GM_addStyle(".nav__row.__mh_train_end i.__mh_train_tracks {background-position: center -9px;}");
-GM_addStyle(".nav__row.__mh_train_start {position:relative;}");
-GM_addStyle(".nav__row.__mh_train_start i.__mh_train_tracks {position:absolute;bottom:0;background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAWCAYAAADAQbwGAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAl5JREFUeNrMVMmOUlEQLYZnIASBMCZMIcDChI7DD/gRunOriRtd9R+o6cT+AP/CjSt3foGrTlgQMIAQZgggMzzPefbFhvcwveiFlVRyc2/VqVPTtem6Lncpdrlj+f8BnSfufdAn0JRF0B20Dv0OHZk82RTqer2W5XLJ8ytoFarjzlKvpQ59TR/6Kpw9w1KpJIFA4DwWi112u13pdDqGoZVomiaRSCQRDoc/DYfD+7D9WCgUxGaz/QV0u90PAHbRarWkWq0aTi6XyxJwsVhIpVKR7XYr8PkwHo+/7Ha7osPh+ANIqsFg8Plms3E2m03xeDySzWYZxBJwPp9LuVwW2oKlE77PgPF+3xRSBcjDyWQiAJVcLkeGV3A6R+RfB2Nht3vS6fQl9KxYLMpsNqPvmanLAL1HpnAwmKE2n1HLr07n4SAwoNfrfQxWF7S93jTNamz0m10HUBjAMdblprBuuAscrax+cg7VCKHjL6EvTsypi42x+gdMgKwnuwx2Gs6aFRqBCHirTSEgCz2dTo0z9RgMjWLapreTKSNVQ3u9ngHM4qs3NiwUCsloNDL0Vp9DIpHgXEo8Hj+oE5nxDrMnqVTq378N6NsVi36/b+z1YDA4SItnslqtVsabCqZ89ynzAUY/mQ7njuundpnpclSUtNttA4x3aj0RvK62yqai1Gq1R8lk8htq5uNHwaIzNaum8PNg+vl8nlsywEY9zWQyV/tdpiDKDxhNwcrHbWANo9GoZZ34ziyYAVcT2dVNKcP5DdKLc+EZSXXxeHgVY9o0Gg3x+/1J/DhvYfeO978FGABB74Vu4zp+rgAAAABJRU5ErkJggg==');\
-background-repeat:no-repeat;width:20px;height:22px;margin-left:1px;opacity:0.8;}");
+GM_addStyle(".nav__row.__mh_train_end i.__mh_train_tracks {background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAWCAYAAADAQbwGAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAjxJREFUeNqslE1oE1EQx99un2sUkfh9TEIwYhJyEELAxJN4lhIReoqKF0EMIorSo4eCCg0q9tYe9CYIAc1FDwYjEVQIOYmKH4TNwUAxbnFjd9P4fzDbPrZvo4cM/Jg3s7P/nfe12mg0Yp41m03WbrfFMFWv18/XarUZprBSqTSfTCYfY/gln8+zdDq98VAIepTL5Z1ILYIV8egfLINblUrFkDW4/OVOpzMPd5bCLnBpvI/GyxRvp9zVVqtlwd/c1KHjODwajX6lrz8EotttxFNwV4r3g7qoLRQKr+QOdUlYh3nhbfAL2IToblWKf4A7olDTtJE8S52p7bcv1hS1P1UvBgmu+mIH/PHlbNWL3Bevkb8CTCl/mNbtmpQ76K3W/wheCuj8mCI3dg0NOhr3wFsWbC/AAhj4m+K+hd8KyuAR2A0+gj0+sQ/gBI174KSyQ2z/GkwnUa9b1aZNgS1ejThuSkHOuZPJZMRhfQCWwHOwSyEoNuMlHf7rsVjsWeCmJBKJG3BZcIaNt6PEm2w2OxcoOBwOP8Odo0V/D+6LaeVyOY6/0JRt2y7dmlmwF5ymGzX2YF+kDfpG3gmFQjbWeIV2VQh+BzvABem6bu7Qdd1TcNP0+8qD4yLfaDRE9/6rKW7O5V6v9wT+XdCUD8FZkUhk2jCM116+WCyyarXKLMtar+33+zOIFyF4RBbU5D92t9vlKDgQj8dNTHNjXTCtwWDA5FrUMdM0k6lU6lM4HHaUgpMwnU3YJi74V4ABABsT5ipS/d3iAAAAAElFTkSuQmCC');background-position: center center;}");
 
 use(SgApi);
 use(Util);
@@ -165,8 +162,8 @@ function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
 			navRowIsTrain = false;
 			} else {
 				if(lazyTrainManager[descr] === 1) {//Apply "train opening" style to first train giveaway
-					$(prevNavRow).addClass("__mh_train_start");
-					$(prevNavRow).append('<i class="__mh_train_tracks"></i>');
+					//$(prevNavRow).addClass("__mh_train_start");
+					//$(prevNavRow).append('<i class="__mh_train_tracks"></i>');
 				}
 				console.log('t');
 				navRowIsTrain = true;
