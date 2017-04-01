@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Bookmarks
 // @namespace    http://steamgifts.com/
-// @version      0.9
+// @version      1.0.0
 // @description  Bookmark giveaways
 // @author       mahermen,crazoter
 // @downloadURL  https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js
@@ -25,7 +25,7 @@
 //GA Entered classes
 GM_addStyle(".nav__relative-dropdown.___mh_bookmark_outer_container {z-index:1000;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered *{opacity:0.7;}");
-GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered.mid_train .train_tracks {opacity: 0.17; padding: 0px 4px 0px 4px}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered.__mh_mid_train .__mh_train_tracks {opacity: 0.17;}");
 //GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered {background-image: linear-gradient(#f6f6ec 0%, #e9e9ca 100%);background-image: -moz-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);background-image: -webkit-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);}");
 //GA Owned classes
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_owned {background-image: linear-gradient(#f7edf1 0%, #e6d9de 100%);\
@@ -36,18 +36,40 @@ GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_owned::hover { color: #111;
 //GM_addStyle(".nav__row.__mh_bookmark_item{padding-bottom:10px}");
 //GM_addStyle(".nav__row.__mh_bookmark_item{border-top:1px solid #DDD;}");
 //GM_addStyle(".nav__row.__mh_bookmark_item{z-index:9;position:relative;box-shadow: 0px 1px 5px -1px #ccc;}");
-GM_addStyle(".nav__row.__mh_bookmark_item.mid_train{box-shadow: inset 0 0 10px -9px #000000;height: 20px;overflow:hidden;margin: 0px 0px 0px 2px;}");
-GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__name{white-space: nowrap;}");
-GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .nav__row__summary__description{display:none;}");
-GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .train_tracks {opacity: 0.3; padding: 0px 4px 0px 4px}");
-GM_addStyle(".nav__row.__mh_bookmark_item.mid_train .__mh_nav_row_img{width:80px;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_mid_train{height: 20px;overflow:hidden;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_mid_train .nav__row__summary__name{white-space: nowrap;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_mid_train .nav__row__summary__description{display:none;}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_mid_train .__mh_train_tracks {opacity: 0.2; padding: 0px 6px 0px 3px}");
+GM_addStyle(".nav__row.__mh_bookmark_item.__mh_mid_train .__mh_nav_row_img{width:80px;}");
+
+GM_addStyle(".nav__row i.__mh_train_tracks {background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAUCAYAAAC58NwRAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAUFJREFUeNqU0j8oRWEYx/Hz5/pzr0kMVzIYDEQ2pZTFYlZ2i8XAyGC1UWQwMDGIazIok79ZbMpmlCJcJXEd9/o+p99bJ+V07qnPPad7n+c57+99r+953gbG8Yh1fOETP8ihgGn0Ycvno+Zlv95sQgkjeMEuKnpLhAbkMYFu7LnOA2ynTF7FhT0E+iLLsuIaW9ImhvCKucSSXOi8fu/Bcr2hI5uwhEk8Y0VhbVurekMjZtCrLPFVyhD6PBk6hJ/S4KsmfjjBAMo4Vmh30nYOzRhDF47qDf1hDVOYVeh5Ta7oHir0Igax4Dr3sZMyeQ1nLnRBhxOmNOSUpcWWdIcOvOMG33/+fFbYj3ZcJ0PXVBzpXk1kaNKOPlnhKC5xiE4U0YZWTS0q3y2GbW2neNDO3P+ToaxdvAoSoYKU0KHblF8BBgCOtE6kWi9QOAAAAABJRU5ErkJggg==);\
+background-repeat: no-repeat;\
+padding: 0px 4px 0px 4px;\
+height: 20px;\
+width: 12px;\
+background-position: center center;\
+margin: 0 0 0 0;\}");
+GM_addStyle(".nav__row.__mh_train_end i.__mh_train_tracks {background-position: center -9px;}");
+GM_addStyle(".nav__row.__mh_train_start {position:relative;}");
+GM_addStyle(".nav__row.__mh_train_start i.__mh_train_tracks {position:absolute;bottom:0;background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAWCAYAAADAQbwGAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAl5JREFUeNrMVMmOUlEQLYZnIASBMCZMIcDChI7DD/gRunOriRtd9R+o6cT+AP/CjSt3foGrTlgQMIAQZgggMzzPefbFhvcwveiFlVRyc2/VqVPTtem6Lncpdrlj+f8BnSfufdAn0JRF0B20Dv0OHZk82RTqer2W5XLJ8ytoFarjzlKvpQ59TR/6Kpw9w1KpJIFA4DwWi112u13pdDqGoZVomiaRSCQRDoc/DYfD+7D9WCgUxGaz/QV0u90PAHbRarWkWq0aTi6XyxJwsVhIpVKR7XYr8PkwHo+/7Ha7osPh+ANIqsFg8Plms3E2m03xeDySzWYZxBJwPp9LuVwW2oKlE77PgPF+3xRSBcjDyWQiAJVcLkeGV3A6R+RfB2Nht3vS6fQl9KxYLMpsNqPvmanLAL1HpnAwmKE2n1HLr07n4SAwoNfrfQxWF7S93jTNamz0m10HUBjAMdblprBuuAscrax+cg7VCKHjL6EvTsypi42x+gdMgKwnuwx2Gs6aFRqBCHirTSEgCz2dTo0z9RgMjWLapreTKSNVQ3u9ngHM4qs3NiwUCsloNDL0Vp9DIpHgXEo8Hj+oE5nxDrMnqVTq378N6NsVi36/b+z1YDA4SItnslqtVsabCqZ89ynzAUY/mQ7njuundpnpclSUtNttA4x3aj0RvK62yqai1Gq1R8lk8htq5uNHwaIzNaum8PNg+vl8nlsywEY9zWQyV/tdpiDKDxhNwcrHbWANo9GoZZ34ziyYAVcT2dVNKcP5DdKLc+EZSXXxeHgVY9o0Gg3x+/1J/DhvYfeO978FGABB74Vu4zp+rgAAAABJRU5ErkJggg==');\
+background-repeat:no-repeat;width:20px;height:22px;margin-left:1px;opacity:0.8;}");
 
 use(SgApi);
 use(Util);
 
-//GM_setValue("fixedEntered",false);
+//Runtime variables
 var data = new Data();
-var lazyTrainManager = {};//{desc1:1,desc:2,...}
+var lazyTrainManager = {};//Used to keep track of which giveaways are a train and identify the start and end of said trains.Format:{{desc1:String}: {timesOccured:int},{desc2:String}: {timesOccured:int},...}
+var prevNavRow;
+var navRowIsTrain = false;
+
+//Settings
+var SETTINGS_STATES = "Show giveaway status";
+var SETTINGS_TRAIN = "Group giveaways in a train";
+var settings = new Settings("SG_Bookmarks")
+		.boolean("Show giveaway status", true, {description:"Dim entered giveaways and color giveaways you cannot enter.", values: ["No", "Yes"]})
+    .boolean("Group giveaways in a train", true, {description:"Show which giveaways are in the same train.", values: ["No", "Yes"]});
+settings=settings.init({instantSubmit: true,useGmStorage:true});
 
 //CONSTANTS
 var STATE_NOT_ENTERED = "unentered";
@@ -55,6 +77,7 @@ var STATE_ENTERED = "entered";
 var STATE_OWNED = "owned";//Owned
 var STATE_ENDED = "ended";
 var MAX_BOOKMARK_STR_LENGTH = 39;
+
 
 function main(){
 	requireDeclaredStyles();
@@ -122,22 +145,37 @@ function openBookmarkContainer(e){
 }
 
 function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
-	 var $html = $('<a class="nav__row"></a>');
+	 var $html = $('<a class="nav__row" id="__mh_'+id+'"></a>');
 	$html.addClass("__mh_bookmark_item");
 	 if(hasEnded)
 		 $html.addClass(" __mh_ended");
-	 else if(state) {
+	 else if(settings.get(SETTINGS_STATES) && state) 
 		 $html.addClass("__mh_state_"+state);
-	 }
 	if(url)
 		$html.attr("href",url);
+  if(settings.get(SETTINGS_TRAIN)) {
+	  if(!lazyTrainManager[descr]) {//First time seeing this descript
+			 lazyTrainManager[descr] = 1;
+			console.log(prevNavRow);
+			if(navRowIsTrain && prevNavRow) {//apply "track end" style to last train giveaway
+				$(prevNavRow).addClass("__mh_train_end");
+				console.log("a");
+			}
+			console.log('y');
+			navRowIsTrain = false;
+			} else {
+				if(lazyTrainManager[descr] === 1) {//Apply "train opening" style to first train giveaway
+					$(prevNavRow).addClass("__mh_train_start");
+					$(prevNavRow).append('<i class="__mh_train_tracks"></i>');
+				}
+				console.log('t');
+				navRowIsTrain = true;
+				lazyTrainManager[descr]++;
+				$html.addClass("__mh_mid_train");//I mean, trains are usually by the same person and usually end at the same time
+				$html.append('<i class="__mh_train_tracks"></i>');
+			}
+	}
 	if(imgUrl)
-		if(!lazyTrainManager[descr]) {//First time seeing this descript
-		 lazyTrainManager[descr] = 1;
-		} else {
-			$html.addClass("mid_train");//I mean, trains are usually by the same person and usually end at the same time
-			$html.append('<img class="train_tracks" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAUCAYAAAC58NwRAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAUFJREFUeNqU0j8oRWEYx/Hz5/pzr0kMVzIYDEQ2pZTFYlZ2i8XAyGC1UWQwMDGIazIok79ZbMpmlCJcJXEd9/o+p99bJ+V07qnPPad7n+c57+99r+953gbG8Yh1fOETP8ihgGn0Ycvno+Zlv95sQgkjeMEuKnpLhAbkMYFu7LnOA2ynTF7FhT0E+iLLsuIaW9ImhvCKucSSXOi8fu/Bcr2hI5uwhEk8Y0VhbVurekMjZtCrLPFVyhD6PBk6hJ/S4KsmfjjBAMo4Vmh30nYOzRhDF47qDf1hDVOYVeh5Ta7oHir0Igax4Dr3sZMyeQ1nLnRBhxOmNOSUpcWWdIcOvOMG33/+fFbYj3ZcJ0PXVBzpXk1kaNKOPlnhKC5xiE4U0YZWTS0q3y2GbW2neNDO3P+ToaxdvAoSoYKU0KHblF8BBgCOtE6kWi9QOAAAAABJRU5ErkJggg==">');
-		}
 		$html.append('<img class="__mh_nav_row_img" src="'+imgUrl+'">');
 	var $div = $('<div class="nav__row__summary">');
 	var $titleP = $('<p class="nav__row__summary__name">'+(title?title:"")+'</p>');
@@ -156,6 +194,7 @@ function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
 		$html.append($remove);
 	}
    $(".__mh_bookmark_container").append($html);
+	 prevNavRow = document.getElementById('__mh_'+id);
 }
 
 function addNavRow(bookmarkData){
