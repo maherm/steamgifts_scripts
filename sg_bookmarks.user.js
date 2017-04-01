@@ -31,7 +31,8 @@ var lazyTrainManager = {};//Used to keep track of which giveaways are a train an
 var prevNavRow;
 var navRowIsTrain = false;
 //In order to prevent racing issues, bookmarks are obtained using AJAX. However, this may cause a problem if the user navigates away from the page if the AJAX is not complete yet.
-//queuedBookmarkIds is there to catch these interrupted AJAX requests and ensure the integrity of the bookmarks.
+//queuedBookmarkIds is there to catch these interrupted AJAX requests and ensure the integrity of the bookmarks. Before an AJAX call, the bookmark id is added to this map; after it is done,
+//the ID is removed. If the ID still exists in the map on navigating to a new page, the AJAX call is automatically retried.
 var queuedBookmarkIds = getQueuedBookmarkIds();
 
 //Settings
@@ -76,7 +77,7 @@ function fixDatabase(){
 		if(k===undefined || k === "undefined"){
 			clearBookmark(k);
 		}
-		if(!fixedEntered || data.bookmarks[k] === undefined || Object.keys(data.bookmarks[k]).length===0){
+		if(data.bookmarks[k] === undefined || Object.keys(data.bookmarks[k]).length===0){
 			console.log("Fixing ",k);
 			clearBookmark(k);
 			Giveaways.loadGiveaway(k, function(ga){
@@ -276,6 +277,17 @@ function readCurrentData(){
 
 function saveData(){
 	 GM_setValue("__mh_bookmarks", data);
+}
+//Currently for debugging purposes only
+function exportData(){
+	var exportedData = JSON.stringify(GM_getValue("__mh_bookmarks", ""));
+	console.log(exportedData);
+}
+//exportData();
+function importData(stringData){
+	console.log('importing...');
+	GM_setValue("__mh_bookmarks", JSON.parse(stringData));
+	console.log('importing successful!');
 }
 
 function clearBookmark(gaId){
