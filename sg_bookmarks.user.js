@@ -26,16 +26,12 @@
 GM_addStyle(".nav__relative-dropdown.___mh_bookmark_outer_container {z-index:1000;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered *{opacity:0.7;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered.__mh_mid_train .__mh_train_tracks {opacity: 0.17;}");
-//GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_entered {background-image: linear-gradient(#f6f6ec 0%, #e9e9ca 100%);background-image: -moz-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);background-image: -webkit-linear-gradient(#f6f6ec 0%, #e9e9ca 100%);}");
 //GA Owned classes
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_owned {background-image: linear-gradient(#f7edf1 0%, #e6d9de 100%);\
 background-image: -moz-linear-gradient(#f7edf1 0%, #e6d9de 100%);\
 background-image: -webkit-linear-gradient(#f7edf1 0%, #e6d9de 100%);}");
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_state_owned::hover { color: #111; }");
 //Train classes
-//GM_addStyle(".nav__row.__mh_bookmark_item{padding-bottom:10px}");
-//GM_addStyle(".nav__row.__mh_bookmark_item{border-top:1px solid #DDD;}");
-//GM_addStyle(".nav__row.__mh_bookmark_item{z-index:9;position:relative;box-shadow: 0px 1px 5px -1px #ccc;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_mid_train{height: 20px;overflow:hidden;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_mid_train .nav__row__summary__name{white-space: nowrap;}");
 GM_addStyle(".nav__row.__mh_bookmark_item.__mh_mid_train .nav__row__summary__description{display:none;}");
@@ -59,6 +55,9 @@ var data = new Data();
 var lazyTrainManager = {};//Used to keep track of which giveaways are a train and identify the start and end of said trains.Format:{{desc1:String}: {timesOccured:int},{desc2:String}: {timesOccured:int},...}
 var prevNavRow;
 var navRowIsTrain = false;
+//In order to prevent racing issues, bookmarks are obtained using AJAX. However, this may cause a problem if the user navigates away from the page if the AJAX is not complete yet.
+//queuedBookmarkIds is there to catch these interrupted AJAX requests and ensure the integrity of the bookmarks.
+var queuedBookmarkIds = getQueuedBookmarkIds();
 
 //Settings
 var SETTINGS_STATES = "Show giveaway status";
@@ -77,6 +76,7 @@ var MAX_BOOKMARK_STR_LENGTH = 39;
 
 
 function main(){
+	syncQueuedBookmarkIds();
 	requireDeclaredStyles();
 	readBookmarks();
   initSettings();
@@ -98,7 +98,6 @@ function fixDatabase(){
 	}
 	console.log("Fixing corrupted database...");
 	for(var k in data.bookmarks){
-		//console.log(data.bookmarks);
 		if(k===undefined || k === "undefined"){
 			clearBookmark(k);
 		}
@@ -114,11 +113,10 @@ function fixDatabase(){
 				}catch(e){
 					console.error(e);
 				}
-				//console.log("wtf")
 			});
 		}
 	}
-	console.log("Fixed");
+	console.log("Fixed Database");
 	GM_setValue("fixedDb0.7", true);
 	GM_setValue("fixedEntered",true);
 }
@@ -153,19 +151,11 @@ function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
   if(settings.get(SETTINGS_TRAIN)) {
 	  if(!lazyTrainManager[descr]) {//First time seeing this descript
 			 lazyTrainManager[descr] = 1;
-			console.log(prevNavRow);
 			if(navRowIsTrain && prevNavRow) {//apply "track end" style to last train giveaway
 				$(prevNavRow).addClass("__mh_train_end");
-				console.log("a");
 			}
-			console.log('y');
 			navRowIsTrain = false;
 			} else {
-				if(lazyTrainManager[descr] === 1) {//Apply "train opening" style to first train giveaway
-					//$(prevNavRow).addClass("__mh_train_start");
-					//$(prevNavRow).append('<i class="__mh_train_tracks"></i>');
-				}
-				console.log('t');
 				navRowIsTrain = true;
 				lazyTrainManager[descr]++;
 				$html.addClass("__mh_mid_train");//I mean, trains are usually by the same person and usually end at the same time
@@ -319,12 +309,21 @@ function clearBookmark(gaId){
 }
 
 function updateBookmark(entering) {
-  readBookmarks();
-	var gaData = readCurrentData();
-	if(entering) { gaData.isEntered = true; }//assume success
-	else { gaData.isEntered = false; }
-	saveBookmark(getCurrentId(), gaData);
-	buildNavRows();
+	queueBookmarkId(getCurrentId());
+	Giveaways.loadGiveaway(getCurrentId(), function(ga){
+				delete ga.descriptionHtml;
+		    ga = unwrap(ga);
+		    readBookmarks();
+		    if(entering) { ga.isEntered = true; }//assume success
+				else { ga.isEntered = false; }
+				saveBookmark(getCurrentId(), ga);
+				try{
+					buildNavRows();
+				}catch(e){
+					console.error(e);
+				}
+		    unqueueBookmarkId(getCurrentId());
+	});
 }
 
 function saveBookmark(gaId, bookmarkData){
@@ -336,8 +335,20 @@ function toggleBookmark(gaId){
 	readBookmarks();
 	if(isBookmarked(gaId))
 		clearBookmark(gaId);
-	else
-		saveBookmark(gaId, readCurrentData());
+	else {
+		  queueBookmarkId(gaId);
+			Giveaways.loadGiveaway(gaId, function(ga){
+					delete ga.descriptionHtml;
+					ga = unwrap(ga);
+					saveBookmark(gaId, ga);
+					try{
+						buildNavRows();
+						updateButtonState();
+					}catch(e){
+						console.error(e);
+					}
+		});
+	}
 	buildNavRows();
 }
 
@@ -369,6 +380,35 @@ function bookmarkList(){
 	return lst;
 }
 
+function getQueuedBookmarkIds() {
+	return JSON.parse(GM_getValue("__mh_queuedBookmarkIds", "{}"));
+}
+function syncQueuedBookmarkIds() {
+	$.each(queuedBookmarkIds,function(k,v) {
+		Giveaways.loadGiveaway(k, function(ga){
+				delete ga.descriptionHtml;
+		    ga = unwrap(ga);
+		    saveBookmark(k, ga);
+				try{
+					buildNavRows();
+				}catch(e){
+					console.error(e);
+				}
+			  unqueueBookmarkId(k);
+				if(readCurrentData().id == ga.id) {//if on the page
+					updateButtonState(); 
+				}
+	 });
+	});
+}
+function queueBookmarkId(gaId) {
+	queuedBookmarkIds[gaId] = 1;
+	GM_setValue("__mh_queuedBookmarkIds", JSON.stringify(queuedBookmarkIds));
+}
+function unqueueBookmarkId(gaId) {
+	delete queuedBookmarkIds[gaId];
+	GM_setValue("__mh_queuedBookmarkIds", JSON.stringify(queuedBookmarkIds));
+}
 
 function Data(){
 	var that = this;
