@@ -17,7 +17,6 @@
 // @grant        GM_listValues
 // @grant        GM_deleteValue
 // @grant        GM_getResourceText
-// @grant        GM_addStyle
 // ==/UserScript==
 
 /*jshint multistr: true */
@@ -116,7 +115,13 @@ function openBookmarkContainer(e){
 }
 
 function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
-	 var $html = $('<a class="nav__row" id="__mh_'+id+'"></a>');
+	 var $html = createBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state);
+   $(".__mh_bookmark_container").append($html);
+	 prevNavRow = document.getElementById('__mh_'+id);
+}
+
+function createBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
+		 var $html = $('<a class="nav__row" id="__mh_'+id+'"></a>');
 	$html.addClass("__mh_bookmark_item");
 	 if(hasEnded)
 		 $html.addClass(" __mh_ended");
@@ -156,8 +161,7 @@ function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
 		});
 		$html.append($remove);
 	}
-   $(".__mh_bookmark_container").append($html);
-	 prevNavRow = document.getElementById('__mh_'+id);
+	return $html;
 }
 
 function addNavRow(bookmarkData){
@@ -183,6 +187,30 @@ function addNavRow(bookmarkData){
 	else if(bookmarkData.isOwned) { state = STATE_OWNED; }
 	else if(bookmarkData.hasEnded) { state = STATE_ENDED; }
    addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state);
+}
+
+function enterNavRow(gaId,entering) {
+	var domId = "#__mh_"+gaId;
+	//console.log(domId+" "+entering)
+	if(entering) {
+		$(domId).removeClass( "__mh_state_unentered" ).addClass("__mh_state_entered");
+	} else {
+		$(domId).removeClass( "__mh_state_entered" ).addClass("__mh_state_unentered");
+	}
+}
+
+function removeNavRow(gaId) {
+	var domId = "#__mh_"+gaId;
+	var $nextBookmark = $(domId).next();
+	if($nextBookmark.hasClass("__mh_mid_train")) {//if it was next in a train, remove the class to make it the next head
+	  $nextBookmark.removeClass("__mh_mid_train");
+		$nextBookmark.children().first().remove();
+	}
+	$(domId).remove();
+}
+
+function insertNavRow(gaId) {
+	
 }
 
 function clearNavRows(){
@@ -281,6 +309,7 @@ function saveData(){
 //Currently for debugging purposes only
 function exportData(){
 	var exportedData = JSON.stringify(GM_getValue("__mh_bookmarks", ""));
+	exportedData = exportedData.replace(/\"/g,'\\\"').replace(/\'/g,'\\\'');//make it easier to copy and import in the future
 	console.log(exportedData);
 }
 //exportData();
@@ -305,7 +334,7 @@ function updateBookmark(entering) {
 				else { ga.isEntered = false; }
 				saveBookmark(getCurrentId(), ga);
 				try{
-					buildNavRows();
+					enterNavRow(getCurrentId(),entering);
 				}catch(e){
 					console.error(e);
 				}
@@ -320,9 +349,12 @@ function saveBookmark(gaId, bookmarkData){
 
 function toggleBookmark(gaId){
 	readBookmarks();
-	if(isBookmarked(gaId))
+	if(isBookmarked(gaId)) {
 		clearBookmark(gaId);
-	else {
+		removeNavRow(gaId);
+	  updateButtonState();
+	  //buildNavRows();
+	} else {
 		  queueBookmarkId(gaId);
 			Giveaways.loadGiveaway(gaId, function(ga){
 					delete ga.descriptionHtml;
@@ -336,7 +368,6 @@ function toggleBookmark(gaId){
 					}
 		});
 	}
-	buildNavRows();
 }
 
 function initSettings(){
@@ -396,6 +427,40 @@ function unqueueBookmarkId(gaId) {
 	delete queuedBookmarkIds[gaId];
 	GM_setValue("__mh_queuedBookmarkIds", JSON.stringify(queuedBookmarkIds));
 }
+
+//Recursive
+function syncAllEnteredBookmarks(enteredGiveawaysMap,page) {
+	if(!enteredGiveawaysMap) {//If no params, start sync
+		enteredGiveawaysMap = {};
+		page = 1;
+	}
+	$.get( "https://www.steamgifts.com/giveaways/entered/search?page="+page, function( data ) {
+		console.log("Syncing Entered GA page "+page);
+		var dom = document.createElement('div');
+		dom.innerHTML = data;
+		var enteredGAsOnPage = dom.getElementsByClassName("table__remove-default is-clickable").length;
+		var giveawayArr = document.getElementsByClassName("global__image-outer-wrap global__image-outer-wrap--game-small");
+		giveawayArr.length = enteredGAsOnPage;//truncate giveaways that are already expired
+		for(var i=0;i<giveawayArr.length;i++){
+			enteredGiveawaysMap[giveawayArr.href] = 1;
+		}
+		if(enteredGAsOnPage >= 50) {//may have more, so navigate to next page
+			syncAllEnteredBookmarks(enteredGiveawaysMap,++page);
+		} else {//start sync
+			for(var k in data.bookmarks){
+				if(enteredGAsOnPage[buildGiveawayUrl(data.bookmarks[k].id)]) {
+					data.bookmarks[k].isEntered = true;
+				} else {
+					data.bookmarks[k].isEntered = false;
+				}
+			}
+			saveData();
+			buildNavRows();
+			console.log("Synced all bookmarks.");
+		}
+	});
+}
+//syncAllEnteredBookmarks();
 
 function Data(){
 	var that = this;
