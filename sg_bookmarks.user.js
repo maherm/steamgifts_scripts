@@ -37,10 +37,6 @@ var queuedBookmarkIds = getQueuedBookmarkIds();
 //Settings
 var SETTINGS_STATES = "Show giveaway status";
 var SETTINGS_TRAIN = "Group giveaways in a train";
-var settings = new Settings("SG_Bookmarks")
-		.boolean("Show giveaway status", true, {description:"Dim entered giveaways and color giveaways you cannot enter.", values: ["No", "Yes"]})
-    .boolean("Group giveaways in a train", true, {description:"Show which giveaways are in the same train.", values: ["No", "Yes"]});
-settings=settings.init({instantSubmit: true,useGmStorage:true});
 
 //CONSTANTS
 var STATE_NOT_ENTERED = "unentered";
@@ -121,15 +117,17 @@ function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
 }
 
 function createBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
-		 var $html = $('<a class="nav__row" id="__mh_'+id+'"></a>');
+	var settings_states = data.settings.get(SETTINGS_STATES);//settings.get(SETTINGS_STATES)
+	var settings_train = data.settings.get(SETTINGS_TRAIN);//settings.get(SETTINGS_TRAIN)
+  var $html = $('<a class="nav__row" id="__mh_'+id+'"></a>');
 	$html.addClass("__mh_bookmark_item");
 	 if(hasEnded)
 		 $html.addClass(" __mh_ended");
-	 else if(settings.get(SETTINGS_STATES) && state) 
+	 else if(settings_states && state) 
 		 $html.addClass("__mh_state_"+state);
 	if(url)
 		$html.attr("href",url);
-  if(settings.get(SETTINGS_TRAIN)) {
+  if(settings_train) {
 	  if(!lazyTrainManager[descr]) {//First time seeing this descript
 			 lazyTrainManager[descr] = 1;
 			if(navRowIsTrain && prevNavRow) {//apply "track end" style to last train giveaway
@@ -373,6 +371,8 @@ function toggleBookmark(gaId){
 function initSettings(){
     data.settings = new SgApi.Settings("SG Bookmarks")
         .boolean("Notify if Giveaways are about to end", true)
+		    .boolean("Show giveaway status", true, {description:"Dim entered giveaways and color giveaways you cannot enter.", values: ["No", "Yes"]})
+        .boolean("Group giveaways in a train", true, {description:"Show which giveaways are in the same train.", values: ["No", "Yes"]})
         .int("Minutes before Ending", 10, {minValue:1})
         .init({instantSubmit:true});
 }
@@ -434,21 +434,23 @@ function syncAllEnteredBookmarks(enteredGiveawaysMap,page) {
 		enteredGiveawaysMap = {};
 		page = 1;
 	}
-	$.get( "https://www.steamgifts.com/giveaways/entered/search?page="+page, function( data ) {
+	$.get( "https://www.steamgifts.com/giveaways/entered/search?page="+page, function( pageData ) {
 		console.log("Syncing Entered GA page "+page);
 		var dom = document.createElement('div');
-		dom.innerHTML = data;
+		dom.innerHTML = pageData;
 		var enteredGAsOnPage = dom.getElementsByClassName("table__remove-default is-clickable").length;
-		var giveawayArr = document.getElementsByClassName("global__image-outer-wrap global__image-outer-wrap--game-small");
+		var giveawayArr = dom.getElementsByClassName("global__image-outer-wrap global__image-outer-wrap--game-small");
 		giveawayArr.length = enteredGAsOnPage;//truncate giveaways that are already expired
-		for(var i=0;i<giveawayArr.length;i++){
-			enteredGiveawaysMap[giveawayArr.href] = 1;
+		for(var i=0;i<enteredGAsOnPage;i++){
+			enteredGiveawaysMap[getGiveawayID(giveawayArr[i].href)] = 1;
 		}
 		if(enteredGAsOnPage >= 50) {//may have more, so navigate to next page
 			syncAllEnteredBookmarks(enteredGiveawaysMap,++page);
 		} else {//start sync
+			readBookmarks();
 			for(var k in data.bookmarks){
-				if(enteredGAsOnPage[buildGiveawayUrl(data.bookmarks[k].id)]) {
+				//console.log(k);
+				if(enteredGiveawaysMap[k]) {
 					data.bookmarks[k].isEntered = true;
 				} else {
 					data.bookmarks[k].isEntered = false;
@@ -459,6 +461,9 @@ function syncAllEnteredBookmarks(enteredGiveawaysMap,page) {
 			console.log("Synced all bookmarks.");
 		}
 	});
+}
+function getGiveawayID(url) {
+	return url.split('/')[4];
 }
 //syncAllEnteredBookmarks();
 
