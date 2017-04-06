@@ -33,6 +33,7 @@ var navRowIsTrain = false;
 //queuedBookmarkIds is there to catch these interrupted AJAX requests and ensure the integrity of the bookmarks. Before an AJAX call, the bookmark id is added to this map; after it is done,
 //the ID is removed. If the ID still exists in the map on navigating to a new page, the AJAX call is automatically retried.
 var queuedBookmarkIds = getQueuedBookmarkIds();
+var rebuildNavRows = true;
 
 //Settings
 var SETTINGS_STATES = "Show giveaway status";
@@ -103,6 +104,7 @@ function closeBookmarkContainer(){
 function openBookmarkContainer(e){
 	var  $t=$(this);
 	setTimeout(function(){
+		  if(rebuildNavRows) { buildNavRows(); rebuildNavRows = false; }
 			$t.addClass("nav__button-container--active");
 			$(".___mh_bookmark_outer_container.nav__relative-dropdown").removeClass("is-hidden");
             $("html, body").animate({ scrollTop: 0 }, "fast");
@@ -163,28 +165,8 @@ function createBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
 }
 
 function addNavRow(bookmarkData){
-   var title = bookmarkData.gameTitle;
-   var steamAppId = bookmarkData.steamAppId || bookmarkData.steamId;
-   var id = bookmarkData.id;
-   var url = buildGiveawayUrl(id);
-   var creator = bookmarkData.creator;
-   var ends = bookmarkData.endTime;
-   var cp = bookmarkData.cp;
-   var imgUrl = bookmarkData.thumbUrl || getGameThumbUrl(steamAppId);
-   var endsAt = moment.unix(ends);
-   var hasEnded = endsAt.isBefore(moment());
-	 var cpstr = " ("+cp+"P)";
-	 if(title.length + cpstr.length > MAX_BOOKMARK_STR_LENGTH) {
-		 title = title.substr(0,MAX_BOOKMARK_STR_LENGTH - cpstr.length) + "…";
-	 }
-   title = title+ cpstr;
-   var endsStr = hasEnded ? "ended" : "ends";
-   var descr = "by "+creator+" - "+endsStr+" "+endsAt.fromNow();
-   var state = STATE_NOT_ENTERED;
-	 if(bookmarkData.isEntered) { state = STATE_ENTERED; } 
-	else if(bookmarkData.isOwned) { state = STATE_OWNED; }
-	else if(bookmarkData.hasEnded) { state = STATE_ENDED; }
-   addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state);
+   var n = new NavRow(bookmarkData);
+   addBookmarkMenuItem(n.title,n.descr,n.url,n.imgUrl,n.hasEnded,n.id,n.state);
 }
 
 function enterNavRow(gaId,entering) {
@@ -208,7 +190,7 @@ function removeNavRow(gaId) {
 }
 
 function insertNavRow(gaId) {
-	
+  var n = new NavRow(bookmarkData);
 }
 
 function clearNavRows(){
@@ -220,7 +202,7 @@ function buildNavRows(){
 	clearNavRows();
 	var lst = bookmarkList();
 	if(lst.length > 0)
-		$.each(bookmarkList(),function(i,e){addNavRow(e);});
+		$.each(lst,function(i,e){addNavRow(e);});
 	else
 		addBookmarkMenuItem("<div class='nav__row__summary__name __mh_no_bookmarks'>No bookmarks</div>",false,false,"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
 
@@ -253,7 +235,7 @@ function addNavButton(){
 	$html.on("click.bookmark",openBookmarkContainer);
 	$(".nav__right-container").prepend($html);
 	$(document).on("click.bookmark",":not(.___mh_bookmark_outer_container)",closeBookmarkContainer);
-   buildNavRows();
+  //buildNavRows();//Handled by the rebuildNavRows var
 }
 
 function toggleBookmarkCurrentPage(){
@@ -325,16 +307,18 @@ function clearBookmark(gaId){
 function updateBookmark(entering) {
 	queueBookmarkId(getCurrentId());
 	Giveaways.loadGiveaway(getCurrentId(), function(ga){
-				delete ga.descriptionHtml;
-		    ga = unwrap(ga);
-		    readBookmarks();
-		    if(entering) { ga.isEntered = true; }//assume success
-				else { ga.isEntered = false; }
-				saveBookmark(getCurrentId(), ga);
-				try{
-					enterNavRow(getCurrentId(),entering);
-				}catch(e){
-					console.error(e);
+		    if(isBookmarked(gaId)) {
+					delete ga.descriptionHtml;
+					ga = unwrap(ga);
+					readBookmarks();
+					if(entering) { ga.isEntered = true; }//assume success
+					else { ga.isEntered = false; }
+					saveBookmark(getCurrentId(), ga);
+					try{
+						enterNavRow(getCurrentId(),entering);
+					}catch(e){
+						console.error(e);
+					}
 				}
 		    unqueueBookmarkId(getCurrentId());
 	});
@@ -352,18 +336,26 @@ function toggleBookmark(gaId){
 		removeNavRow(gaId);
 	  updateButtonState();
 	  //buildNavRows();
+		rebuildNavRows = true;
 	} else {
+		  saveBookmark(gaId, readCurrentData());
+		  rebuildNavRows = true;
+		  updateButtonState();
 		  queueBookmarkId(gaId);
 			Giveaways.loadGiveaway(gaId, function(ga){
-					delete ga.descriptionHtml;
-					ga = unwrap(ga);
-					saveBookmark(gaId, ga);
-					try{
-						buildNavRows();
-						updateButtonState();
-					}catch(e){
-						console.error(e);
+				  if(isBookmarked(gaId)) {
+						delete ga.descriptionHtml;
+						ga = unwrap(ga);
+						saveBookmark(gaId, ga);
+						try{
+							//buildNavRows();
+							//updateButtonState();
+							rebuildNavRows = true;
+						}catch(e){
+							console.error(e);
+						}
 					}
+				  unqueueBookmarkId(gaId);
 		});
 	}
 }
@@ -404,18 +396,21 @@ function getQueuedBookmarkIds() {
 function syncQueuedBookmarkIds() {
 	$.each(queuedBookmarkIds,function(k,v) {
 		Giveaways.loadGiveaway(k, function(ga){
-				delete ga.descriptionHtml;
-		    ga = unwrap(ga);
-		    saveBookmark(k, ga);
-				try{
-					buildNavRows();
-				}catch(e){
-					console.error(e);
+			  if(isBookmarked(k)) {//GA should be bookmarked at any point in time. If it's not, it was already removed by the user; in that case, don't bother syncing.
+					delete ga.descriptionHtml;
+					ga = unwrap(ga);
+					saveBookmark(k, ga);
+					try{
+						//buildNavRows();
+						rebuildNavRows = true;
+					}catch(e){
+						console.error(e);
+					}
+					if(readCurrentData().id == ga.id) {//if on the page
+						updateButtonState(); 
+					}
 				}
 			  unqueueBookmarkId(k);
-				if(readCurrentData().id == ga.id) {//if on the page
-					updateButtonState(); 
-				}
 	 });
 	});
 }
@@ -470,6 +465,30 @@ function getGiveawayID(url) {
 function Data(){
 	var that = this;
 	this.bookmarks = {};
+}
+
+function NavRow(bookmarkData){
+   this.title = bookmarkData.gameTitle;
+   this.steamAppId = bookmarkData.steamAppId || bookmarkData.steamId;
+   this.id = bookmarkData.id;
+   this.url = buildGiveawayUrl(this.id);
+   this.creator = bookmarkData.creator;
+   this.ends = bookmarkData.endTime;
+   this.cp = bookmarkData.cp;
+   this.imgUrl = bookmarkData.thumbUrl || getGameThumbUrl(this.steamAppId);
+   this.endsAt = moment.unix(this.ends);
+   this.hasEnded = this.endsAt.isBefore(moment());
+	 this.cpstr = " ("+this.cp+"P)";
+	 if(this.title.length + this.cpstr.length > MAX_BOOKMARK_STR_LENGTH) {
+		 this.title = this.title.substr(0,MAX_BOOKMARK_STR_LENGTH - this.cpstr.length) + "…";
+	 }
+   this.title = this.title+ this.cpstr;
+   var endsStr = this.hasEnded ? "ended" : "ends";
+   this.descr = "by "+this.creator+" - "+endsStr+" "+this.endsAt.fromNow();
+   this.state = STATE_NOT_ENTERED;
+	 if(bookmarkData.isEntered) { this.state = STATE_ENTERED; } 
+	 else if(bookmarkData.isOwned) { this.state = STATE_OWNED; }
+	 else if(bookmarkData.hasEnded) { this.state = STATE_ENDED; }
 }
 
 main();
