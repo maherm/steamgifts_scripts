@@ -26,16 +26,14 @@ use(Util);
 
 //Runtime variables
 var data = new Data();
-var lazyTrainManager = {};//Used to keep track of which giveaways are a train and identify the start and end of said trains.Format:{{desc1:String}: {timesOccured:int},{desc2:String}: {timesOccured:int},...}
+var lazyTrainManager = {};//Format:{ {desc1:String}: {timesOccured:int},{desc2:String}: {timesOccured:int},... }
 var prevNavRow;
 var navRowIsTrain = false;
-//In order to prevent racing issues, bookmarks are obtained using AJAX. However, this may cause a problem if the user navigates away from the page if the AJAX is not complete yet.
-//queuedBookmarkIds is there to catch these interrupted AJAX requests and ensure the integrity of the bookmarks. Before an AJAX call, the bookmark id is added to this map; after it is done,
-//the ID is removed. If the ID still exists in the map on navigating to a new page, the AJAX call is automatically retried.
 var queuedBookmarkIds = getQueuedBookmarkIds();
 var current_queued_id_count = 0;
 var rebuildNavRows = true;
 var lastSyncAllTimestamp = GM_getValue("__mh_lastSyncAllTimestamp",-1);
+var gaClickHandlersInitialized = false;
 
 //Settings
 var SETTINGS_STATES = "Show giveaway status";
@@ -44,7 +42,7 @@ var SETTINGS_TRAIN = "Group giveaways in a train";
 //CONSTANTS
 var STATE_NOT_ENTERED = "unentered";
 var STATE_ENTERED = "entered";
-var STATE_OWNED = "owned";//Owned
+var STATE_OWNED = "owned";
 var STATE_ENDED = "ended";
 var MAX_BOOKMARK_STR_LENGTH = 39;
 var SYNC_ALL_EXPIRY_PERIOD_S = 60*60;
@@ -56,51 +54,18 @@ function main(){
 	syncAllIfRequired();
 	requireDeclaredStyles();
 	readBookmarks();
-  initSettings();
-	fixDatabase();
+	initSettings();
 	if(isGiveaway()){
 		if(amIBookmarked()) {
-		  $("div.sidebar__entry-delete").click(function(){updateBookmark(false);});//setup giveaway update
-			$("div.sidebar__entry-insert").click(function(){updateBookmark(true);});//setup giveaway update
+       initGAClickHandlers();
 		}
 	  showButton();
 	}
-	if($(".form__sync-default").length > 0) {
+	if($(".form__sync-default").length > 0) {//Sync bookmarks too when syncing steam
 		$(".form__sync-default").click(function(){ syncAllEnteredBookmarks(); });
 	}
-   addNavButton();
+	addNavButton();
 }
-
-function fixDatabase(){
-	var fixedEntered = true;//GM_getValue("fixedEntered",false);
-	if(parseBool(GM_getValue("fixedDb0.7", false)) && fixedEntered){
-		return; //already fixed
-	}
-	console.log("Fixing corrupted database...");
-	for(var k in data.bookmarks){
-		if(k===undefined || k === "undefined"){
-			clearBookmark(k);
-		}
-		if(data.bookmarks[k] === undefined || Object.keys(data.bookmarks[k]).length===0){
-			console.log("Fixing ",k);
-			clearBookmark(k);
-			Giveaways.loadGiveaway(k, function(ga){
-				delete ga.descriptionHtml;
-				data.bookmarks[k] = unwrap(ga);
-				saveData();
-				try{
-					buildNavRows();
-				}catch(e){
-					console.error(e);
-				}
-			});
-		}
-	}
-	console.log("Fixed Database");
-	GM_setValue("fixedDb0.7", true);
-	GM_setValue("fixedEntered",true);
-}
-
 
 function closeBookmarkContainer(){
 	var $button = $('.__mh_bookmark_button');
@@ -115,30 +80,30 @@ function openBookmarkContainer(e){
 		  if(rebuildNavRows) { buildNavRows(); rebuildNavRows = false; }
 			$t.addClass("nav__button-container--active");
 			$(".___mh_bookmark_outer_container.nav__relative-dropdown").removeClass("is-hidden");
-            $("html, body").animate({ scrollTop: 0 }, "fast");
+			$("html, body").animate({ scrollTop: 0 }, "fast");
 	},0);
-    return false;
+	return false;
 }
 
 function addBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
-	 var $html = createBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state);
-   $(".__mh_bookmark_container").append($html);
-	 prevNavRow = document.getElementById('__mh_'+id);
+	var $html = createBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state);
+	$(".__mh_bookmark_container").append($html);
+	prevNavRow = document.getElementById('__mh_'+id);
 }
 
 function createBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
-	var settings_states = data.settings.get(SETTINGS_STATES);//settings.get(SETTINGS_STATES)
-	var settings_train = data.settings.get(SETTINGS_TRAIN);//settings.get(SETTINGS_TRAIN)
-  var $html = $('<a class="nav__row" id="__mh_'+id+'"></a>');
+	var settings_states = data.settings.get(SETTINGS_STATES);
+	var settings_train = data.settings.get(SETTINGS_TRAIN);
+		var $html = $('<a class="nav__row" id="__mh_'+id+'"></a>');
 	$html.addClass("__mh_bookmark_item");
-	 if(hasEnded)
+	if(hasEnded)
 		 $html.addClass(" __mh_ended");
-	 else if(settings_states && state) 
+	else if(settings_states && state) 
 		 $html.addClass("__mh_state_"+state);
 	if(url)
 		$html.attr("href",url);
-  if(settings_train) {
-	  if(!lazyTrainManager[descr]) {//First time seeing this descript
+	if(settings_train) {
+		if(!lazyTrainManager[descr]) {//First time seeing this descript
 			 lazyTrainManager[descr] = 1;
 			if(navRowIsTrain && prevNavRow) {//apply "track end" style to last train giveaway
 				$(prevNavRow).addClass("__mh_train_end");
@@ -147,10 +112,10 @@ function createBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
 			} else {
 				navRowIsTrain = true;
 				lazyTrainManager[descr]++;
-				$html.addClass("__mh_mid_train");//I mean, trains are usually by the same person and usually end at the same time
+				$html.addClass("__mh_mid_train");//Trains usually: 1. Are by the same person and 2. End at the same time
 				$html.append('<i class="__mh_train_tracks"></i>');
 			}
-	}
+		}
 	if(imgUrl)
 		$html.append('<img class="__mh_nav_row_img" src="'+imgUrl+'">');
 	var $div = $('<div class="nav__row__summary">');
@@ -173,13 +138,12 @@ function createBookmarkMenuItem(title,descr,url,imgUrl,hasEnded,id,state){
 }
 
 function addNavRow(bookmarkData){
-   var n = new NavRow(bookmarkData);
-   addBookmarkMenuItem(n.title,n.descr,n.url,n.imgUrl,n.hasEnded,n.id,n.state);
+	var n = new NavRow(bookmarkData);
+	addBookmarkMenuItem(n.title,n.descr,n.url,n.imgUrl,n.hasEnded,n.id,n.state);
 }
 
 function enterNavRow(gaId,entering) {
 	var domId = "#__mh_"+gaId;
-	//console.log(domId+" "+entering)
 	if(entering) {
 		$(domId).removeClass( "__mh_state_unentered" ).addClass("__mh_state_entered");
 	} else {
@@ -191,7 +155,7 @@ function removeNavRow(gaId) {
 	var domId = "#__mh_"+gaId;
 	var $nextBookmark = $(domId).next();
 	if($nextBookmark.hasClass("__mh_mid_train")) {//if it was next in a train, remove the class to make it the next head
-	  $nextBookmark.removeClass("__mh_mid_train");
+		$nextBookmark.removeClass("__mh_mid_train");
 		$nextBookmark.children().first().remove();
 	}
 	$(domId).remove();
@@ -217,18 +181,18 @@ function buildNavRows(){
 }
 
 function updateBadge($html){
-    var doNotify = data.settings.get("Notify if Giveaways are about to end");
+	var doNotify = data.settings.get("Notify if Giveaways are about to end");
 	var timespan = data.settings.get("Minutes before Ending");
 	if(!doNotify)
 		return;
 	var badgeNum = bookmarkList().filter(function(e){
 		return moment.unix(e.endTime).isBetween(moment(), moment().add(timespan, "minutes"));
 	}).length;
-   if(badgeNum>0){
-	   $html.find("a.nav__button").append("<div class='nav__notification'>"+badgeNum+"</div>");
-   }else{
-	   $html.find("a.nav__button .nav__notification").remove();
-   }
+	if(badgeNum>0){
+		$html.find("a.nav__button").append("<div class='nav__notification'>"+badgeNum+"</div>");
+	}else{
+		$html.find("a.nav__button .nav__notification").remove();
+	}
 }
 
 function addNavButton(){
@@ -243,7 +207,6 @@ function addNavButton(){
 	$html.on("click.bookmark",openBookmarkContainer);
 	$(".nav__right-container").prepend($html);
 	$(document).on("click.bookmark",":not(.___mh_bookmark_outer_container)",closeBookmarkContainer);
-  //buildNavRows();//Handled by the rebuildNavRows var
 }
 
 function toggleBookmarkCurrentPage(){
@@ -302,9 +265,8 @@ function exportData(){
 }
 //exportData();
 function importData(stringData){
-	console.log('importing...');
 	GM_setValue("__mh_bookmarks", JSON.parse(stringData));
-	console.log('importing successful!');
+	console.log('Importing successful!');
 }
 
 function clearBookmark(gaId){
@@ -315,7 +277,7 @@ function clearBookmark(gaId){
 function updateBookmark(entering) {
 	queueBookmarkId(getCurrentId());
 	Giveaways.loadGiveaway(getCurrentId(), function(ga){
-		    if(isBookmarked(getCurrentId())) {
+			if(isBookmarked(getCurrentId())) {
 					delete ga.descriptionHtml;
 					ga = unwrap(ga);
 					readBookmarks();
@@ -328,7 +290,7 @@ function updateBookmark(entering) {
 						console.error(e);
 					}
 				}
-		    unqueueBookmarkId(getCurrentId());
+			unqueueBookmarkId(getCurrentId());
 	});
 }
 
@@ -342,39 +304,37 @@ function toggleBookmark(gaId){
 	if(isBookmarked(gaId)) {
 		clearBookmark(gaId);
 		removeNavRow(gaId);
-	  updateButtonState();
-	  //buildNavRows();
-		//rebuildNavRows = true;
+		updateButtonState();
 	} else {
-		  saveBookmark(gaId, readCurrentData());
-		  rebuildNavRows = true;
-		  updateButtonState();
-		  queueBookmarkId(gaId);
-			Giveaways.loadGiveaway(gaId, function(ga){
-				  if(isBookmarked(gaId)) {
-						delete ga.descriptionHtml;
-						ga = unwrap(ga);
-						saveBookmark(gaId, ga);
-						try{
-							//buildNavRows();
-							//updateButtonState();
-							rebuildNavRows = true;
-						}catch(e){
-							console.error(e);
-						}
-					}
-				  unqueueBookmarkId(gaId);
+    initGAClickHandlers();
+		//For speed, save the current bookmark first and validate again later via AJAX
+		saveBookmark(gaId, readCurrentData());
+		rebuildNavRows = true;
+		updateButtonState();
+		queueBookmarkId(gaId);
+		Giveaways.loadGiveaway(gaId, function(ga){
+			if(isBookmarked(gaId)) {
+				delete ga.descriptionHtml;
+				ga = unwrap(ga);
+				saveBookmark(gaId, ga);
+				try{
+					rebuildNavRows = true;
+				}catch(e){
+					console.error(e);
+				}
+			}
+			unqueueBookmarkId(gaId);
 		});
 	}
 }
 
 function initSettings(){
-    data.settings = new SgApi.Settings("SG Bookmarks")
-        .boolean("Notify if Giveaways are about to end", true)
-		    .boolean("Show giveaway status", true, {description:"Dim entered giveaways and color giveaways you cannot enter.", values: ["No", "Yes"]})
-        .boolean("Group giveaways in a train", true, {description:"Show which giveaways are in the same train.", values: ["No", "Yes"]})
-        .int("Minutes before Ending", 10, {minValue:1})
-        .init({instantSubmit:true});
+	data.settings = new SgApi.Settings("SG Bookmarks")
+		.boolean("Notify if Giveaways are about to end", true)
+			.boolean("Show giveaway status", true, {description:"Dim entered giveaways and color giveaways you cannot enter.", values: ["No", "Yes"]})
+		.boolean("Group giveaways in a train", true, {description:"Show which giveaways are in the same train.", values: ["No", "Yes"]})
+		.int("Minutes before Ending", 10, {minValue:1})
+		.init({instantSubmit:true});
 }
 
 function readBookmarks(){
@@ -425,7 +385,6 @@ function syncQueuedBookmarkIds() {
 				  syncQueuedBookmarkIds();//call again in case there are any more that are blocked by the current_queued_id_count;
 		 });
 		} else { //break out if AJAX call limit is hit
-			console.log("AJAX limit hit");
 			return false; 
 		}
 	});
@@ -484,10 +443,18 @@ function syncAllEnteredBookmarks(enteredGiveawaysMap,page) {
 		}
 	});
 }
+
 function getGiveawayID(url) {
 	return url.split('/')[4];
 }
-//syncAllEnteredBookmarks();
+
+function initGAClickHandlers() {
+	if(!gaClickHandlersInitialized) {
+		$("div.sidebar__entry-delete").click(function(){updateBookmark(false);});
+		$("div.sidebar__entry-insert").click(function(){updateBookmark(true);});
+		gaClickHandlersInitialized = true;
+	}
+}
 
 function Data(){
 	var that = this;
