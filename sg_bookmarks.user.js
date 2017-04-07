@@ -33,7 +33,9 @@ var navRowIsTrain = false;
 //queuedBookmarkIds is there to catch these interrupted AJAX requests and ensure the integrity of the bookmarks. Before an AJAX call, the bookmark id is added to this map; after it is done,
 //the ID is removed. If the ID still exists in the map on navigating to a new page, the AJAX call is automatically retried.
 var queuedBookmarkIds = getQueuedBookmarkIds();
+var current_queued_id_count = 0;
 var rebuildNavRows = true;
+var lastSyncAllTimestamp = GM_getValue("__mh_lastSyncAllTimestamp",-1);
 
 //Settings
 var SETTINGS_STATES = "Show giveaway status";
@@ -45,10 +47,13 @@ var STATE_ENTERED = "entered";
 var STATE_OWNED = "owned";//Owned
 var STATE_ENDED = "ended";
 var MAX_BOOKMARK_STR_LENGTH = 39;
+var SYNC_ALL_EXPIRY_PERIOD_S = 60*60;
+var SYNC_QUEUED_MAX_CONCURRENT_IDS = 3;
 
 
 function main(){
 	syncQueuedBookmarkIds();
+	syncAllIfRequired();
 	requireDeclaredStyles();
 	readBookmarks();
   initSettings();
@@ -58,7 +63,10 @@ function main(){
 		  $("div.sidebar__entry-delete").click(function(){updateBookmark(false);});//setup giveaway update
 			$("div.sidebar__entry-insert").click(function(){updateBookmark(true);});//setup giveaway update
 		}
-	   showButton();
+	  showButton();
+	}
+	if($(".form__sync-default").length > 0) {
+		$(".form__sync-default").click(function(){ syncAllEnteredBookmarks(); });
 	}
    addNavButton();
 }
@@ -307,7 +315,7 @@ function clearBookmark(gaId){
 function updateBookmark(entering) {
 	queueBookmarkId(getCurrentId());
 	Giveaways.loadGiveaway(getCurrentId(), function(ga){
-		    if(isBookmarked(gaId)) {
+		    if(isBookmarked(getCurrentId())) {
 					delete ga.descriptionHtml;
 					ga = unwrap(ga);
 					readBookmarks();
@@ -336,7 +344,7 @@ function toggleBookmark(gaId){
 		removeNavRow(gaId);
 	  updateButtonState();
 	  //buildNavRows();
-		rebuildNavRows = true;
+		//rebuildNavRows = true;
 	} else {
 		  saveBookmark(gaId, readCurrentData());
 		  rebuildNavRows = true;
@@ -395,23 +403,31 @@ function getQueuedBookmarkIds() {
 }
 function syncQueuedBookmarkIds() {
 	$.each(queuedBookmarkIds,function(k,v) {
-		Giveaways.loadGiveaway(k, function(ga){
-			  if(isBookmarked(k)) {//GA should be bookmarked at any point in time. If it's not, it was already removed by the user; in that case, don't bother syncing.
-					delete ga.descriptionHtml;
-					ga = unwrap(ga);
-					saveBookmark(k, ga);
-					try{
-						//buildNavRows();
-						rebuildNavRows = true;
-					}catch(e){
-						console.error(e);
+		if(current_queued_id_count < SYNC_QUEUED_MAX_CONCURRENT_IDS) {//Used to prevent too many concurrent AJAX calls which can occur from Sync All
+			current_queued_id_count++;
+			Giveaways.loadGiveaway(k, function(ga){
+					if(isBookmarked(k)) {//GA should be bookmarked at any point in time. If it's not, it was already removed by the user; in that case, don't bother syncing.
+						delete ga.descriptionHtml;
+						ga = unwrap(ga);
+						saveBookmark(k, ga);
+						try{
+							//buildNavRows();
+							rebuildNavRows = true;
+						}catch(e){
+							console.error(e);
+						}
+						if(readCurrentData().id == ga.id) {//if on the page
+							updateButtonState(); 
+						}
 					}
-					if(readCurrentData().id == ga.id) {//if on the page
-						updateButtonState(); 
-					}
-				}
-			  unqueueBookmarkId(k);
-	 });
+					unqueueBookmarkId(k);
+				  current_queued_id_count--;
+				  syncQueuedBookmarkIds();//call again in case there are any more that are blocked by the current_queued_id_count;
+		 });
+		} else { //break out if AJAX call limit is hit
+			console.log("AJAX limit hit");
+			return false; 
+		}
 	});
 }
 function queueBookmarkId(gaId) {
@@ -423,6 +439,14 @@ function unqueueBookmarkId(gaId) {
 	GM_setValue("__mh_queuedBookmarkIds", JSON.stringify(queuedBookmarkIds));
 }
 
+function syncAllIfRequired() {
+	var momentS = parseInt(moment().unix());
+	if(momentS - lastSyncAllTimestamp >= SYNC_ALL_EXPIRY_PERIOD_S) {
+		syncAllEnteredBookmarks();
+	} 
+	//Putting the setVal here will mean that navigating away from the page too soon will disrupt the syncing. This is a design decision to prevent too many requests.
+	GM_setValue("__mh_lastSyncAllTimestamp",momentS);
+}
 //Recursive
 function syncAllEnteredBookmarks(enteredGiveawaysMap,page) {
 	if(!enteredGiveawaysMap) {//If no params, start sync
@@ -444,15 +468,18 @@ function syncAllEnteredBookmarks(enteredGiveawaysMap,page) {
 		} else {//start sync
 			readBookmarks();
 			for(var k in data.bookmarks){
-				//console.log(k);
 				if(enteredGiveawaysMap[k]) {
 					data.bookmarks[k].isEntered = true;
 				} else {
+					if(data.bookmarks[k].isEntered) {//if was originally entered, it's maybe because the user now owns the game
+						queueBookmarkId(k);//queue it for individual sync
+					}
 					data.bookmarks[k].isEntered = false;
 				}
 			}
 			saveData();
 			buildNavRows();
+			syncQueuedBookmarkIds();
 			console.log("Synced all bookmarks.");
 		}
 	});
