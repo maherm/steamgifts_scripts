@@ -270,13 +270,19 @@ function deleteEndedGAs(){
     });
 }
 
+function deleteEndedGAsSetting(){
+    deleteEndedGAs();
+    buildNavRows();
+    updateBadge($(".__mh_bookmark_button"));   
+}
+
 function initSettings(){
     data.settings = new SgApi.Settings("SG Bookmarks")
         .boolean("Notify if Giveaways are about to end", true)
         .int("Minutes before Ending", 10, {minValue:1, visible: function(){return this.get("Notify if Giveaways are about to end");}})
         .boolean("Flip", false, {visible:false})
         .boolean("Remove ended Giveaways automatically", false, {description: "CAUTION! If you check this setting all your ended bookmarks are deleted immediately!"})
-        .func("Clean up",deleteEndedGAs, {description:"Delete all ended Giveaways from your bookmarks", faIcon:"fa-trash-o"})
+        .func("Clean up",deleteEndedGAsSetting, {description:"Delete all ended Giveaways from your bookmarks", faIcon:"fa-trash-o"})
         .init({instantSubmit:true});
     data.settings.on("save", function(){
         this.reload();
