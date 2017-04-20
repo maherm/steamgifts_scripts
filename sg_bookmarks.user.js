@@ -68,6 +68,10 @@ function main(){
 	addNavButton();
 }
 
+function isBookmarkContainerOpenend(){
+    return !$(".___mh_bookmark_outer_container.nav__relative-dropdown").hasClass("is-hidden");
+}
+
 function closeBookmarkContainer(){
 	var $button = $('.__mh_bookmark_button');
 	var $dropdown = $(".___mh_bookmark_outer_container.nav__relative-dropdown");
@@ -166,18 +170,32 @@ function insertNavRow(gaId) {
   var n = new NavRow(bookmarkData);
 }
 
-function clearNavRows(){
-	$(".__mh_bookmark_container").empty();
+function millisTill(datetime){
+    return moment.unix(datetime).diff(moment());
+}
+
+function clearTimer(){
     if(timer){
         clearTimeout(timer);
         timer = undefined;
     }
-
-	lazyTrainManager = {};
 }
 
-function millisTill(datetime){
-    return moment.unix(datetime).diff(moment());
+function setTimer(toTime){
+    clearTimer();
+    timer = setTimeout(function(){
+        updateBadge();
+        if(isBookmarkContainerOpenend())
+            buildNavRows();
+        else
+            rebuildNavRows=true;
+    },millisTill(toTime));
+}
+
+
+function clearNavRows(){
+	$(".__mh_bookmark_container").empty();
+ 	lazyTrainManager = {};
 }
 
 function buildNavRows(){
@@ -185,7 +203,7 @@ function buildNavRows(){
 	var lst = bookmarkList();
 	if(lst.length > 0){
 		$.each(lst,function(i,e){addNavRow(e);});
-        timer = setTimeout(function(){updateBadge(); rebuildNavRows=true;},millisTill(lst[0].endTime));
+        setTimer(lst[0].endTime);
     }
 	else
 		addBookmarkMenuItem("<div class='nav__row__summary__name __mh_no_bookmarks'>No bookmarks</div>",false,false,"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
@@ -200,7 +218,8 @@ function updateBadge($html){
 		$html.find("a.nav__button .nav__notification").remove();
 		return;
 	}
-	var badgeNum = bookmarkList().filter(function(e){
+    var lst = bookmarkList();
+	var badgeNum = lst.filter(function(e){
 		return moment.unix(e.endTime).isBetween(moment(), moment().add(timespan, "minutes"));
 	}).length;
 	if(badgeNum>0){
@@ -208,6 +227,7 @@ function updateBadge($html){
 	}else{
 		$html.find("a.nav__button .nav__notification").remove();
 	}
+    setTimer(lst[0].endTime);
 }
 
 function addNavButton(){
