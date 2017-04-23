@@ -31,7 +31,7 @@ var prevNavRow;
 var navRowIsTrain = false;
 var queuedBookmarkIds = getQueuedBookmarkIds();
 var current_queued_id_count = 0;
-var rebuildNavRows = true;
+var lastBuildTime = 0;
 var lastSyncAllTimestamp = GM_getValue("__mh_lastSyncAllTimestamp",-1);
 var gaClickHandlersInitialized = false;
 var timer; //Timeout till next scheduled redraw
@@ -79,10 +79,34 @@ function closeBookmarkContainer(){
 	$button.removeClass("nav__button-container--active").addClass("nav__button-container--inactive");
 }
 
+function markForRebuild(){
+    GM_setValue("__mh_bookmarksLastChanged", moment().valueOf());
+}
+
+function setBuiltTimestamp(){
+    lastBuildTime = moment().valueOf();
+}
+
+function getLastChangedTimestamp(){
+    return +GM_getValue("__mh_bookmarksLastChanged", moment().valueOf());
+}
+
+function rebuildNavRows(){
+ return moment(getLastChangedTimestamp()).isAfter(lastBuildTime);
+}
+
+function doFullRebuild(){
+    readBookmarks();
+    updateButtonState();
+    updateBadge();
+    buildNavRows();
+    setBuiltTimestamp();
+}
+
 function openBookmarkContainer(e){
 	var  $t=$(this);
 	setTimeout(function(){
-		  if(rebuildNavRows) { buildNavRows(); updateBadge(); rebuildNavRows = false; }
+		  if(rebuildNavRows()) { doFullRebuild(); }
 			$t.addClass("nav__button-container--active");
 			$(".___mh_bookmark_outer_container.nav__relative-dropdown").removeClass("is-hidden");
 			$("html, body").animate({ scrollTop: 0 }, "fast");
@@ -186,9 +210,9 @@ function setTimer(toTime){
     timer = setTimeout(function(){
         updateBadge();
         if(isBookmarkContainerOpenend())
-            buildNavRows();
+            doFullRebuild();
         else
-            rebuildNavRows=true;
+            markForRebuild();
     },millisTill(toTime));
 }
 
@@ -330,10 +354,10 @@ function toggleBookmark(gaId){
 		removeNavRow(gaId);
 		updateButtonState();
 	} else {
-    initGAClickHandlers();
+        initGAClickHandlers();
 		//For speed, save the current bookmark first and validate again later via AJAX
 		saveBookmark(gaId, readCurrentData());
-		rebuildNavRows = true;
+		markForRebuild();
 		updateButtonState();
 		queueBookmarkId(gaId);
 		Giveaways.loadGiveaway(gaId, function(ga){
@@ -342,7 +366,7 @@ function toggleBookmark(gaId){
 				ga = unwrap(ga);
 				saveBookmark(gaId, ga);
 				try{
-					rebuildNavRows = true;
+					markForRebuild();
 				}catch(e){
 					console.error(e);
 				}
@@ -420,7 +444,7 @@ function syncQueuedBookmarkIds() {
 						saveBookmark(k, ga);
 						try{
 							//buildNavRows();
-							rebuildNavRows = true;
+							markForRebuild();
 						}catch(e){
 							console.error(e);
 						}
