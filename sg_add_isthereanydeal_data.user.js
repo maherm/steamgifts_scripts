@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         SG Add IsThereAnyDeal Data
 // @namespace    http://steamgifts.com/
-// @version      0.11
+// @version      0.12
 // @description  Adds a link to IsThereAnyDeal on the GA page and fetches the current best price and the bundles from itad.com
 // @author       mh
 // @downloadURL  https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_add_isthereanydeal_data.user.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.3/jquery.min.js
 // @require      http://momentjs.com/downloads/moment.min.js
-// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi.js
-// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.6/sgapi_gatools.js
+// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.7/sgapi.js
+// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.7/sgapi_gatools.js
 // @resource     css https://raw.githubusercontent.com/maherm/steamgifts_scripts/9edf74/sg_add_isthereanydeal_data.css
 // @include      http*://www.steamgifts.com/giveaway/*
 // @grant        GM_xmlhttpRequest
@@ -80,7 +80,7 @@
                 //Load list of bundles
                 if(enable_loadBundleInfos){
                    var $bundleSection = createNewSection($pricesNavSection, "Bundles", "bundles_section");
-                    var $bundles = $html.find(".bundle-container:has(.bundleTagContent:contains(Bundle)) .bundle-head");
+                    var $bundles = $html.find(".bundle-container:has(.bundle-tag:contains(bundle)) .bundle-head");
                     var bundlesExist = false;
                     $bundles.each(function(idx, el){
                         var $el = $(el);
