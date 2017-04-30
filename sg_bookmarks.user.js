@@ -251,7 +251,8 @@ function updateBadge($html){
 	}else{
 		$html.find("a.nav__button .nav__notification").remove();
 	}
-    setTimer(lst[0].endTime);
+    if(lst.length)
+        setTimer(lst[0].endTime);
 }
 
 function addNavButton(){
