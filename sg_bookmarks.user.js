@@ -183,7 +183,7 @@ function enterNavRow(gaId,entering) {
 function removeNavRow(gaId) {
 	var domId = "#__mh_"+gaId;
 	var $nextBookmark = $(domId).next();
-	if($nextBookmark.hasClass("__mh_mid_train")) {//if it was next in a train, remove the class to make it the next head
+	if(!$(domId).hasClass("__mh_mid_train") && $nextBookmark.hasClass("__mh_mid_train"))  {//if it was next in a train, remove the class to make it the next head
 		$nextBookmark.removeClass("__mh_mid_train");
 		$nextBookmark.children().first().remove();
 	}
@@ -495,6 +495,7 @@ function syncAllEnteredBookmarks(enteredGiveawaysMap,page) {
 		for(var i=0;i<enteredGAsOnPage;i++){
 			enteredGiveawaysMap[extractId(giveawayArr[i].href)] = 1;
 		}
+		enteredGAsOnPage += dom.getElementsByClassName("table__column__deleted").length;
 		if(enteredGAsOnPage >= 50) {//may have more, so navigate to next page
 			syncAllEnteredBookmarks(enteredGiveawaysMap,++page);
 		} else {//start sync
