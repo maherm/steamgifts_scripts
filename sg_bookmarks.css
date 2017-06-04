@@ -57,7 +57,7 @@ body>div.___mh_bookmark_outer_container{
 	background-image: -moz-linear-gradient(#f7edf1 0%, #e6d9de 100%);
 	background-image: -webkit-linear-gradient(#f7edf1 0%, #e6d9de 100%);
 }
-.nav__row.__mh_bookmark_item.__mh_state_owned::hover { color: #111; }/*I suspect this is not in effect*/
+.nav__row.__mh_bookmark_item.__mh_state_owned::hover * { color: #lightcoral; }
 
 .nav__row.__mh_bookmark_item.__mh_mid_train{height: 20px;overflow:hidden;}
 .nav__row.__mh_bookmark_item.__mh_mid_train .nav__row__summary__name{white-space: nowrap;}

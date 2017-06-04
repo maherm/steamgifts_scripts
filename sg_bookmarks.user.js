@@ -9,8 +9,9 @@
 // @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.7/sgapi.js
 // @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.7/sgapi_gatools.js
 // @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.7/sgapi_settings.js
+// @require      https://raw.githubusercontent.com/maherm/sgapi/v0.1.7/sgapi_notifications.js
 // @require      http://momentjs.com/downloads/moment.min.js
-// @resource     css https://raw.githubusercontent.com/crazoter/steamgifts_scripts/master/sg_bookmarks.css
+// @resource     css https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_bookmarks.css
 // @include      http*://www.steamgifts.com/*
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -66,6 +67,11 @@ function main(){
 		$(".form__sync-default").click(function(){ syncAllEnteredBookmarks(); });
 	}
 	addNavButton();
+    notifyNewVersion();
+}
+
+function notifyNewVersion(){
+    Notifications.notify("info", "SG Bookmarks has been updated to Version 1.0.0. <a href='/go/comment/dwm3lTd' style='text-decoration:underline; font-weight:bold;'>Check the thread</a> to read about the new features! Click the \"x\" on the right to dismiss this message.", {key:"SGBookmarksVersion1.0.0"});
 }
 
 function isBookmarkContainerOpenend(){
