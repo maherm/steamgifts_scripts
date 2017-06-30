@@ -496,7 +496,7 @@ function syncAllEnteredBookmarks(enteredGiveawaysMap,page) {
 		var dom = document.createElement('div');
 		dom.innerHTML = pageData;
 		var enteredGAsOnPage = dom.getElementsByClassName("table__remove-default is-clickable").length;
-		var giveawayArr = dom.getElementsByClassName("global__image-outer-wrap global__image-outer-wrap--game-small");
+		var giveawayArr = dom.getElementsByClassName("table_image_thumbnail");
 		giveawayArr.length = enteredGAsOnPage;//truncate giveaways that are already expired
 		for(var i=0;i<enteredGAsOnPage;i++){
 			enteredGiveawaysMap[extractId(giveawayArr[i].href)] = 1;
