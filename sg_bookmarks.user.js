@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Bookmarks
 // @namespace    http://steamgifts.com/
-// @version      1.0.0
+// @version      1.0.1
 // @description  Bookmark giveaways
 // @author       mahermen,crazoter
 // @downloadURL  https://github.com/maherm/steamgifts_scripts/raw/master/sg_bookmarks.user.js
@@ -71,7 +71,7 @@ function main(){
 }
 
 function notifyNewVersion(){
-    Notifications.notify("info", "SG Bookmarks has been updated to Version 1.0.0. <a href='/go/comment/dwm3lTd' style='text-decoration:underline; font-weight:bold;'>Check the thread</a> to read about the new features! Click the \"x\" on the right to dismiss this message.", {key:"SGBookmarksVersion1.0.0"});
+    Notifications.notify("info", "SG Bookmarks has been updated to Version 1.0.1. <a href='/go/comment/dwm3lTd' style='text-decoration:underline; font-weight:bold;'>Check the thread</a> to read about the new features! Click the \"x\" on the right to dismiss this message.", {key:"SGBookmarksVersion1.0.0"});
 }
 
 function isBookmarkContainerOpenend(){
