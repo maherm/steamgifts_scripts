@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Add IsThereAnyDeal Data
 // @namespace    http://steamgifts.com/
-// @version      0.12
+// @version      0.13
 // @description  Adds a link to IsThereAnyDeal on the GA page and fetches the current best price and the bundles from itad.com
 // @author       mh
 // @downloadURL  https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_add_isthereanydeal_data.user.js
@@ -80,24 +80,25 @@
                 //Load list of bundles
                 if(enable_loadBundleInfos){
                    var $bundleSection = createNewSection($pricesNavSection, "Bundles", "bundles_section");
-                    var $bundles = $html.find(".bundle-container:has(.bundle-tag:contains(bundle)) .bundle-head");
+                    var $bundles = $html.find("table.bundleTable tr:has(td.bundleTable__title)");
                     var bundlesExist = false;
                     $bundles.each(function(idx, el){
                         var $el = $(el);
-                        var $title = $el.find(".bundle-title");
-                        var $time = $el.find(".bundle-time");
+                        var $title = $el.find(".bundleTable__title");
+                        var $time = $el.find(".bundleTable__expiry");
+                        var $shop = $el.find(".shopTitle");
 
                         //Collect data
-                        var shopName = $title.find(".shopTitle").text();
-                        $title.find("span").remove(); //remove the "by [Shop Name]"
+                        var shopName = $shop.text();
                         var title = $title.text();
                         var url = "https://isthereanydeal.com"+ $title.find("a").attr("href");
-                        var className = $time.hasClass("expired") ? "expired" : "";
+                        var isExpired = $time.hasClass("bundleTable__expiry--expired");
+                        var className = isExpired ? "expired" : "";
                         var time = $time.attr("title");
                         if(time) //"Unknown expiry" has no time in the title attribute
                             time = moment(time, "YYYY-MM-DD HH:mm 'GMT'").fromNow();
                         else
-                            time = "Active";
+                            time =  isExpired? "Expired" : "Active";
 
                         //Build HTML
                         var titleHtml = "<span class='bundleTitle'>"+title+"</span><span class='bundleShop'>"+shopName+"</span>";
