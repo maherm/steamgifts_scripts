@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         SG Add IsThereAnyDeal Data
 // @namespace    http://steamgifts.com/
-// @version      0.15
+// @version      0.16
 // @description  Adds a link to IsThereAnyDeal on the GA page and fetches the current best price and the bundles from itad.com
 // @author       mh
 // @downloadURL  https://raw.githubusercontent.com/maherm/steamgifts_scripts/master/sg_add_isthereanydeal_data.user.js
@@ -25,7 +25,8 @@
 	var staticReplacements = {
         "storiesofbethemfullmoon":"storiesofbethemfullmoonedition",
         "feariireborndlc":"feariireborn",
-		"justcauseiiixl":"justcauseiiixledition"
+		"justcauseiiixl":"justcauseiiixledition",
+		"gabrielknightsinsoffather":"gabrielknightsinsoffathers"
     };
 
     function main(){
