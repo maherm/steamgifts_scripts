@@ -39,7 +39,7 @@
         var encodedTitle = encodeName(title);
 
         //Build URL
-        var url = "https://isthereanydeal.com/#/page:game/info?plain="+encodedTitle;
+        var url = "https://isthereanydeal.com/game/"+encodedTitle+"/info/";
 
         //Add Link to navbar
         var $pricesSection = $(".sidebar__navigation").last();
@@ -122,11 +122,12 @@
 
     function encodeName(str){
         str = str.toLowerCase(); //lowercase
-        str = str.replace(/[1-9]/g, romanize);//romanize digits
+        // str = str.replace(/[1-9]/g, romanize); // Don't romanize digits. (Therefore commented out.)
         str = str.replace(/(^the[^a-z])|([^a-z]the[^a-z])|([^a-z]the$)/g, ""); //remove "the", but not e.g. "other" or "them"
         str = str.replace(/\+/g, "plus");    //spell out "plus"
         str = str.replace(/\&/g, "and");    //spell out "and"
-        str = str.replace(/[^a-z0]/g, '');    //remove remaining invalid characters, like spaces, braces, hyphens etc
+        str = str.replace(/ /g, "-");         // Replace spaces with a dash.
+        str = str.replace(/[^a-z0-9-]/g, ''); // Remove all characters apart from letters, digits and dash.
         return staticReplacements[str] || str;
     }
 
